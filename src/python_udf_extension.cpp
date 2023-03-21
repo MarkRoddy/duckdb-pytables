@@ -9,15 +9,52 @@
 
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 
+#include <Python.h>
+#include <string>
+
+std::string executePythonFunction(const std::string& module_name, const std::string& function_name, const std::string& argument) {
+  // Initialize the Python interpreter
+  Py_Initialize();
+
+  // Import the module and retrieve the function object
+  PyObject* module = PyImport_ImportModule(module_name.c_str());
+  PyObject* function = PyObject_GetAttrString(module, function_name.c_str());
+
+  // Create the argument tuple
+  PyObject* arg = Py_BuildValue("(s)", argument.c_str());
+
+  // Call the function with the argument and retrieve the result
+  PyObject* result = PyObject_CallObject(function, arg);
+  
+  // char* value_c = PyStr_AsString(result);
+  const char* value_c = PyUnicode_AsUTF8(result);
+
+  std::string value(value_c);
+  // Convert the result to a double
+  // double value = PyFloat_AsDouble(result);
+
+  // Clean up and return the result
+  Py_XDECREF(result);
+  Py_XDECREF(arg);
+  Py_XDECREF(function);
+  Py_XDECREF(module);
+  Py_Finalize();
+
+  return value;
+}
+
+
 namespace duckdb {
 
 inline void Python_udfScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
-    auto &name_vector = args.data[0];
-    UnaryExecutor::Execute<string_t, string_t>(
-	    name_vector, result, args.size(),
-	    [&](string_t name) { 
-			return StringVector::AddString(result, "Python_udf "+name.GetString()+" 🐥");;
-        });
+  auto &name_vector = args.data[0];
+  UnaryExecutor::Execute<string_t, string_t>(
+                                             name_vector, result, args.size(),
+                                             [&](string_t name) {
+                                               return StringVector::AddString(result, executePythonFunction("udfs", "reverse", name.GetString()));
+                                               // return executePythonFunction(
+                                               // return StringVector::AddString(result, "Python_udf "+name.GetString()+" 🐥");;
+                                             });
 }
 
 static void LoadInternal(DatabaseInstance &instance) {
