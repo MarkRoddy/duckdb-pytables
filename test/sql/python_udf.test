@@ -1,0 +1,18 @@
+# name: test/sql/python_udf.test
+# description: test python_udf extension
+# group: [python_udf]
+
+# Before we load the extension, this will fail
+statement error
+SELECT python_udf('Sam');
+----
+Catalog Error: Scalar Function with name python_udf does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require python_udf
+
+# Confirm the extension works
+query I
+SELECT python_udf('Sam');
+----
+Python_udf Sam 🐥
