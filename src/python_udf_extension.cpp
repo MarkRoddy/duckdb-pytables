@@ -11,18 +11,62 @@
 
 #include <Python.h>
 #include <string>
+#include <iostream>
 
 std::string executePythonFunction(const std::string& module_name, const std::string& function_name, const std::string& argument) {
+
+  std::cerr << "Intializing the interpreter\n";
   // Initialize the Python interpreter
   Py_Initialize();
 
+  /* 
+     Somewhat of  a hack to add CWD to the module search path. This is going to be a
+     behavior most people expect (or at least I expected). Note the docs that explain
+     module search path setup give some light on why they shouldn't be expected when
+     embedding the interpreter:
+     The first entry in the module search path is the directory that contains
+     the input script, if there is one. Otherwise, the first entry is the current 
+     directory, which is the case when executing the interactive shell, a -c 
+     command, or -m module.
+  */
+  PyRun_SimpleString("import sys; sys.path.insert(0, '')\n");
+
+  /*
+    todo: all above needs to be run at extention initialization time. Kind of rediculus to be
+    creating an interpret for *every* invocation.
+  */
+
+  
+  
   // Import the module and retrieve the function object
+  std::cerr << "Grabbing the module\n";
   PyObject* module = PyImport_ImportModule(module_name.c_str());
+  if ( NULL == module) {
+    throw std::invalid_argument("No such module: " + module_name);
+  } else {
+    std::cerr << "I found a module...\n";
+  }
+  std::cerr << "Conberting the func name to a python value";
+  PyObject* py_function_name = PyUnicode_FromString(function_name.c_str());
+  std::cerr << "Checking if the module as the function";
+  int has_attr = PyObject_HasAttr(module, py_function_name);
+  if (0 == has_attr) {
+    std::cerr << "Function not in module";
+    throw std::invalid_argument("No such function: " + function_name);
+  } else {
+    std::cerr << "Function is on the module";
+  }  
   PyObject* function = PyObject_GetAttrString(module, function_name.c_str());
+
+  /*
+    todo: can we (should we) cache the above function lookup so it doesn't need to happen
+    on a per invocation basis.
+  */
+
 
   // Create the argument tuple
   PyObject* arg = Py_BuildValue("(s)", argument.c_str());
-
+  
   // Call the function with the argument and retrieve the result
   PyObject* result = PyObject_CallObject(function, arg);
   
