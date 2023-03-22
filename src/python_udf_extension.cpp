@@ -87,17 +87,18 @@ std::string executePythonFunction(const std::string& module_name, const std::str
   return value;
 }
 
-
 namespace duckdb {
 
+  
 inline void Python_udfScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
-  auto &name_vector = args.data[0];
-  UnaryExecutor::Execute<string_t, string_t>(
-                                             name_vector, result, args.size(),
-                                             [&](string_t name) {
-                                               return StringVector::AddString(result, executePythonFunction("udfs", "reverse", name.GetString()));
-                                               // return executePythonFunction(
-                                               // return StringVector::AddString(result, "Python_udf "+name.GetString()+" 🐥");;
+  auto &module_vector = args.data[0];
+  auto &func_vector = args.data[1];
+  auto &arg_vector = args.data[2];
+  
+  TernaryExecutor::Execute<string_t, string_t, string_t, string_t>(module_vector, func_vector, arg_vector, result, args.size(),
+                                                                   [&](string_t module_name, string_t func_name, string_t argument) {
+                                                                     return StringVector::AddString(result,
+                                                                                                    executePythonFunction(module_name.GetString(), func_name.GetString(), argument.GetString()));                                         
                                              });
 }
 
@@ -108,7 +109,8 @@ static void LoadInternal(DatabaseInstance &instance) {
     auto &catalog = Catalog::GetSystemCatalog(*con.context);
 
     CreateScalarFunctionInfo python_udf_fun_info(
-            ScalarFunction("python_udf", {LogicalType::VARCHAR}, LogicalType::VARCHAR, Python_udfScalarFun));
+                                                 ScalarFunction("python_udf", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::VARCHAR, Python_udfScalarFun));
+
     python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
     catalog.CreateFunction(*con.context, &python_udf_fun_info);
     con.Commit();
