@@ -14,29 +14,6 @@
 #include <iostream>
 
 std::string executePythonFunction(const std::string& module_name, const std::string& function_name, const std::string& argument) {
-
-  std::cerr << "Intializing the interpreter\n";
-  // Initialize the Python interpreter
-  Py_Initialize();
-
-  /* 
-     Somewhat of  a hack to add CWD to the module search path. This is going to be a
-     behavior most people expect (or at least I expected). Note the docs that explain
-     module search path setup give some light on why they shouldn't be expected when
-     embedding the interpreter:
-     The first entry in the module search path is the directory that contains
-     the input script, if there is one. Otherwise, the first entry is the current 
-     directory, which is the case when executing the interactive shell, a -c 
-     command, or -m module.
-  */
-  PyRun_SimpleString("import sys; sys.path.insert(0, '')\n");
-
-  /*
-    todo: all above needs to be run at extention initialization time. Kind of rediculus to be
-    creating an interpret for *every* invocation.
-  */
-
-  
   
   // Import the module and retrieve the function object
   std::cerr << "Grabbing the module\n";
@@ -82,7 +59,10 @@ std::string executePythonFunction(const std::string& module_name, const std::str
   Py_XDECREF(arg);
   Py_XDECREF(function);
   Py_XDECREF(module);
-  Py_Finalize();
+
+
+  // Should be done at shutdown time. When exactly does that happen?
+  // Py_Finalize();
 
   return value;
 }
@@ -103,7 +83,7 @@ inline void Python_udfScalarFun(DataChunk &args, ExpressionState &state, Vector 
 }
 
 static void LoadInternal(DatabaseInstance &instance) {
-	Connection con(instance);
+    Connection con(instance);
     con.BeginTransaction();
 
     auto &catalog = Catalog::GetSystemCatalog(*con.context);
@@ -113,7 +93,27 @@ static void LoadInternal(DatabaseInstance &instance) {
 
     python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
     catalog.CreateFunction(*con.context, &python_udf_fun_info);
-    con.Commit();
+
+
+  std::cerr << "Intializing the interpreter\n";
+
+  // Initialize the Python interpreter
+  Py_Initialize();
+
+  /* 
+     Somewhat of  a hack to add CWD to the module search path. This is going to be a
+     behavior most people expect (or at least I expected). Note the docs that explain
+     module search path setup give some light on why they shouldn't be expected when
+     embedding the interpreter:
+     The first entry in the module search path is the directory that contains
+     the input script, if there is one. Otherwise, the first entry is the current 
+     directory, which is the case when executing the interactive shell, a -c 
+     command, or -m module.
+  */
+  PyRun_SimpleString("import sys; sys.path.insert(0, '')\n");
+
+
+  con.Commit();
 }
 
 void Python_udfExtension::Load(DuckDB &db) {
