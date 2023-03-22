@@ -1,15 +1,29 @@
+Write user defined functions for DuckDB in CPython.
+
 # WIP Disclaimer
-This template is currently work-in-progress. Feel free to play around with it and give us feedback. Note also that this template depends on a development version of DuckDB. Follow https://duckdb.org/news for more information on official launch.
+You should use this. I mean, unless you want to. I'm not your dad. Full warning, this project is 100% a proof of concept.
 
-# DuckDB Extension Template
-The main goal of this template is to allow users to easily develop, test and distribute their own DuckDB extension.
+## Current Limitations
+Note these are not inherent limitations that can not be overcome, but are presently as yet overcome. Feel free to help with that!
+* Only presently compiles with Python3.9. Will not work with Python3.8, or Python3.10. Do not ask me about Python3.11.
+* Not optimized for high throughput queries.
+* Only Scalar functions are supported (table functions would be great!)
+* Only string arugements and return values are supported.
 
-## Getting started
-First step to getting started is to create your own repo from this template by clicking `Use this template`. Then clone your new repository using 
+
+# Getting started
+Clone the repo being sure to use the `recurse-submodules` option:
+
 ```sh
-git clone --recurse-submodules https://github.com/<you>/<your-new-extension-repo>.git
+git clone --recurse-submodules git@github.com:MarkRoddy/duckdb-python-udf.git
 ```
 Note that `--recurse-submodules` will ensure the correct version of duckdb is pulled allowing you to get started right away.
+
+## Dependencies
+Python3.9 development version. On a Ubuntu system, you can install these via:
+```sh
+sudo apt-get -y install libpython3.9 libpython3.9-dev
+```
 
 ## Building
 To build the extension:
@@ -20,11 +34,11 @@ The main binaries that will be built are:
 ```sh
 ./build/release/duckdb
 ./build/release/test/unittest
-./build/release/extension/<extension_name>/<extension_name>.duckdb_extension
+./build/release/extension/python_udf/python_udf.duckdb_extension
 ```
 - `duckdb` is the binary for the duckdb shell with the extension code automatically loaded. 
 - `unittest` is the test runner of duckdb. Again, the extension is already linked into the binary.
-- `<extension_name>.duckdb_extension` is the loadable binary as it would be distributed.
+- `python_udf/python_udf.duckdb_extension` is the loadable binary as it would be distributed.
 
 ## Running the extension
 To run the extension code, simply start the shell with `./build/release/duckdb`.
@@ -36,7 +50,7 @@ D select python_udf('Jane') as result;
 │    result     │
 │    varchar    │
 ├───────────────┤
-│ Quack Jane 🐥 │
+│     enaJ      │
 └───────────────┘
 ```
 
@@ -46,27 +60,6 @@ Different tests can be created for DuckDB extensions. The primary way of testing
 make test
 ```
 
-## Getting started with your own extension
-After creating a repository from this template, the first step is to name your extension. To rename the extension, run:
-```
-python3 ./scripts/set_extension_name.py <extension_name_you_want>
-```
-Feel free to delete the script after this step.
-
-Now you're good to go! After a (re)build, you should now be able to use your duckdb extension:
-```
-./build/release/duckdb
-D select <extension_name_you_chose>('Jane') as result;
-┌─────────────────────────────────────┐
-│                result               │
-│               varchar               │
-├─────────────────────────────────────┤
-│ <extension_name_you_chose> Jane 🐥  │
-└─────────────────────────────────────┘
-```
-
-For inspiration/examples on how to extend DuckDB in a more meaningful way, check out the [test extensions](https://github.com/duckdb/duckdb/blob/master/test/extension),
-the [in-tree extensions](https://github.com/duckdb/duckdb/tree/master/extension), and the [out-of-tree extensions](https://github.com/duckdblabs).
 
 ## Distributing your extension
 Easy distribution of extensions built with this template is facilitated using a similar process used by DuckDB itself. 
