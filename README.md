@@ -1,7 +1,7 @@
 Write user defined functions for DuckDB in CPython.
 
 # WIP Disclaimer
-You should use this. I mean, unless you want to. I'm not your dad. Full warning, this project is 100% a proof of concept.
+You shouldn't use this. I mean, unless you want to. I'm not your dad. But be aware, this project is 100% a proof of concept at the moment.
 
 ## Current Limitations
 Note these are not inherent limitations that can not be overcome, but are presently as yet overcome. Feel free to help with that!
