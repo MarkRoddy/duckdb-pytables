@@ -33,7 +33,7 @@ jobs:
     - name: Install required ubuntu packages
       if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
       run: |
-        which sudo
+        which sudo || true
         sudo apt-get update -y -qq
         sudo apt-get install -y -qq software-properties-common
         sudo add-apt-repository ppa:git-core/ppa
