@@ -82,10 +82,10 @@ jobs:
     - name: Tell me about your python install
       run: |
         ls -ld /usr/include/python*
-        which python
-        which python3
-        python -V
-        python3 -V
+        which python || echo "No 'python' executable"
+        which python3 || echo "No 'python3' executable"
+        python -V || echo "No 'python' executable"
+        python3 -V || echo "No 'python3' executable"
         ls -l /usr/include/python3.9/*.h
       
       # Build extension
