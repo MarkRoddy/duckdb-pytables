@@ -33,11 +33,14 @@ jobs:
     - name: Install required ubuntu packages
       if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
       run: |
-        which sudo || true
-        which apt-get || true
-        which add-apt-repository || true
+        which sudo || echo "No 'sudo' found"
+        which apt-get || echo "No 'apt-get' found"
         sudo apt-get update -y -qq
+        echo "Update completed"
         sudo apt-get install -y -qq software-properties-common
+        echo "Install completed"
+
+        which add-apt-repository || echo "No 'add-apt-repository' found"
         sudo add-apt-repository ppa:git-core/ppa
         sudo apt-get update -y -qq
         sudo apt-get install -y -qq ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client
