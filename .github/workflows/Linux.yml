@@ -80,6 +80,15 @@ jobs:
       with:
         python-version: '3.9'
 
+    - name: Tell me about your python install
+      run: |
+        ls -ld /usr/include/python*
+        which python
+        which python3
+        python -V
+        python3 -V
+        ls -l /usr/include/python3.9/*.h
+      
       # Build extension
     - name: Build extension
       env:
