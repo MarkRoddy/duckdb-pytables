@@ -53,6 +53,14 @@ jobs:
         fetch-depth: 0
         submodules: 'true'
 
+    - name: Restore cached build artifacts
+      id: cache-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          build/
+        key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
+        
     - name: Checkout DuckDB to version
       if: ${{ matrix.duckdb_version != '<submodule_version>'}}
       run: |
@@ -78,6 +86,14 @@ jobs:
         CXX: ${{ matrix.arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
       run: |
         make release
+
+    - name: Cache build artifacts
+      id: cache-save
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          build/
+        key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
     - name: Build extension
       if: ${{ matrix.arch != 'linux_arm64'}}
