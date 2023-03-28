@@ -35,7 +35,7 @@ jobs:
       run: |
         which sudo || echo "No 'sudo' found"
         which apt-get || echo "No 'apt-get' found"
-        sudo apt-get update -y -qq
+        apt-get update -y -qq
         echo "Update completed"
         sudo apt-get install -y -qq software-properties-common
         echo "Install completed"
