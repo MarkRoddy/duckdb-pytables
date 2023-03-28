@@ -42,20 +42,17 @@ runs:
       with:
         fetch-depth: 0
 
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
     - name: Install Python 3.7
       if: ${{ inputs.python }} == 1
       shell: bash
       run: |
-        wget https://www.python.org/ftp/python/3.7.12/Python-3.7.12.tgz
-        tar xvf Python-3.7.12.tgz
-        cd Python-3.7.12
-        mkdir -p pythonbin
-        ./configure --with-ensurepip=install
-        make -j
-        make install
-        python3.7 --version
-        python3.7 -m pip install pip
-        python3.7 -m pip install requests awscli
+        python3.9 --version
+        python3.9 -m pip install pip
+        python3.9 -m pip install requests awscli
 
     - name: Install CMake 3.21
       shell: bash
@@ -97,6 +94,6 @@ runs:
       shell: bash
       run: |
         ldd --version ldd
-        python3.7 --version
+        python3.9 --version
         git --version
         git log -1 --format=%h

@@ -67,18 +67,14 @@ jobs:
         git checkout ${{ matrix.duckdb_version }}
 
     - if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
-      uses: ./duckdb/.github/actions/centos_7_setup
+      uses: ./.github/actions/centos_7_setup
       with:
         openssl: 0
 
     - if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
-      uses: ./duckdb/.github/actions/ubuntu_16_setup
+      uses: ./.github/actions/ubuntu_16_setup
       with:
         aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
 
     - name: Tell me about your python install
       run: |
