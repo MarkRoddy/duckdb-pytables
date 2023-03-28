@@ -47,10 +47,6 @@ jobs:
         make prefix=/usr install
         git --version
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
@@ -79,6 +75,10 @@ jobs:
       uses: ./duckdb/.github/actions/ubuntu_16_setup
       with:
         aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
 
       # Build extension
     - name: Build extension
