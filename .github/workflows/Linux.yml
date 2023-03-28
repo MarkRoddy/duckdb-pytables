@@ -47,9 +47,9 @@ jobs:
         make prefix=/usr install
         git --version
 
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
 
     - uses: actions/checkout@v3
       with:
