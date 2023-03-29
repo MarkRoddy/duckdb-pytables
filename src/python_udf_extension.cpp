@@ -16,22 +16,15 @@
 std::string executePythonFunction(const std::string& module_name, const std::string& function_name, const std::string& argument) {
   
   // Import the module and retrieve the function object
-  std::cerr << "Grabbing the module\n";
   PyObject* module = PyImport_ImportModule(module_name.c_str());
   if ( NULL == module) {
     throw std::invalid_argument("No such module: " + module_name);
-  } else {
-    std::cerr << "I found a module...\n";
   }
-  std::cerr << "Conberting the func name to a python value";
+
   PyObject* py_function_name = PyUnicode_FromString(function_name.c_str());
-  std::cerr << "Checking if the module as the function";
   int has_attr = PyObject_HasAttr(module, py_function_name);
   if (0 == has_attr) {
-    std::cerr << "Function not in module";
     throw std::invalid_argument("No such function: " + function_name);
-  } else {
-    std::cerr << "Function is on the module";
   }  
   PyObject* function = PyObject_GetAttrString(module, function_name.c_str());
 
@@ -94,13 +87,10 @@ static void LoadInternal(DatabaseInstance &instance) {
     python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
     catalog.CreateFunction(*con.context, &python_udf_fun_info);
 
+    // Initialize the Python interpreter
+    Py_Initialize();
 
-  std::cerr << "Intializing the interpreter\n";
-
-  // Initialize the Python interpreter
-  Py_Initialize();
-
-  /* 
+    /* 
      Somewhat of  a hack to add CWD to the module search path. This is going to be a
      behavior most people expect (or at least I expected). Note the docs that explain
      module search path setup give some light on why they shouldn't be expected when
@@ -109,11 +99,10 @@ static void LoadInternal(DatabaseInstance &instance) {
      the input script, if there is one. Otherwise, the first entry is the current 
      directory, which is the case when executing the interactive shell, a -c 
      command, or -m module.
-  */
-  PyRun_SimpleString("import sys; sys.path.insert(0, '')\n");
-
-
-  con.Commit();
+    */
+    
+    PyRun_SimpleString("import sys; sys.path.insert(0, '')\n");
+    con.Commit();
 }
 
 void Python_udfExtension::Load(DuckDB &db) {
