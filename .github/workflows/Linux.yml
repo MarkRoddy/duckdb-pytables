@@ -106,7 +106,7 @@ jobs:
           build/
         key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
-    - name: Build extension
+    - name: Run Tests
       if: ${{ matrix.arch != 'linux_arm64'}}
       run: |
         make test
