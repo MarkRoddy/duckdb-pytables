@@ -24,8 +24,7 @@ gzip < $ext > "$1.duckdb_extension.gz"
 # upload compressed extension binary to S3
 aws s3 cp $1.duckdb_extension.gz s3://$5/$1/$2/$3/$4/$1.duckdb_extension.gz --acl public-read
 
-if [ $6 = 'true']
-then
+if [ "$6" = 'true' ]; then
   aws s3 cp $1.duckdb_extension.gz s3://$5/$1/latest/$3/$4/$1.duckdb_extension.gz --acl public-read
 fi
 # also uplo
