@@ -10,6 +10,12 @@
 
 set -e
 
+if [ 6 != $# ]; then
+    # Display the usage comments above, dropping other comments and the shebang
+    cat $0 |grep '^#'|head -n 8|tail -n 7;
+    exit 1;
+fi
+
 ext="build/release/extension/$1/$1.duckdb_extension"
 
 # compress extension binary
