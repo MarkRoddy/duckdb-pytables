@@ -13,6 +13,6 @@ require python_udf
 
 # Confirm the extension works
 query I
-SELECT python_udf('Sam');
+SELECT python_udf('udfs', 'reverse', 'Sam');
 ----
-Python_udf Sam 🐥
+maS

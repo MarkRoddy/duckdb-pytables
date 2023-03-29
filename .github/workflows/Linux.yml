@@ -1,5 +1,5 @@
 name: Linux
-on: [push, pull_request,repository_dispatch]
+on: [push]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
   cancel-in-progress: true
@@ -16,14 +16,17 @@ jobs:
       matrix:
         # Add commits/tags to build against other DuckDB versions
         duckdb_version: [ '<submodule_version>' ]
-        arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
+        # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
+        arch: ['linux_amd64']
         include:
           - arch: 'linux_amd64'
-            container: 'ubuntu:16.04'
-          - arch: 'linux_arm64'
-            container: 'ubuntu:18.04'
-          - arch: 'linux_amd64_gcc4'
-            container: 'quay.io/pypa/manylinux2014_x86_64'
+            container: 'ubuntu:20.04'
+          # - arch: 'linux_amd64'
+          #   container: 'ubuntu:16.04'
+          # - arch: 'linux_arm64'
+          #   container: 'ubuntu:18.04'
+          # - arch: 'linux_amd64_gcc4'
+          #   container: 'quay.io/pypa/manylinux2014_x86_64'
     env:
       GEN: ninja
 
@@ -52,6 +55,14 @@ jobs:
         fetch-depth: 0
         submodules: 'true'
 
+    - name: Restore cached build artifacts
+      id: cache-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          build/
+        key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
+        
     - name: Checkout DuckDB to version
       if: ${{ matrix.duckdb_version != '<submodule_version>'}}
       run: |
@@ -59,15 +70,24 @@ jobs:
         git checkout ${{ matrix.duckdb_version }}
 
     - if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
-      uses: ./duckdb/.github/actions/centos_7_setup
+      uses: ./.github/actions/centos_7_setup
       with:
         openssl: 0
 
     - if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
-      uses: ./duckdb/.github/actions/ubuntu_16_setup
+      uses: ./.github/actions/ubuntu_16_setup
       with:
         aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
 
+    - name: Tell me about your python install
+      run: |
+        ls -ld /usr/include/python*
+        which python || echo "No 'python' executable"
+        which python3 || echo "No 'python3' executable"
+        python -V || echo "No 'python' executable"
+        python3 -V || echo "No 'python3' executable"
+        ls -l /usr/include/python3.9/*.h
+      
       # Build extension
     - name: Build extension
       env:
@@ -78,7 +98,15 @@ jobs:
       run: |
         make release
 
-    - name: Build extension
+    - name: Cache build artifacts
+      id: cache-save
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          build/
+        key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+
+    - name: Run Tests
       if: ${{ matrix.arch != 'linux_arm64'}}
       run: |
         make test

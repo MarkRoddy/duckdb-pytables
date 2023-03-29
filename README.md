@@ -43,9 +43,9 @@ The main binaries that will be built are:
 ## Running the extension
 To run the extension code, simply start the shell with `./build/release/duckdb`.
 
-Now we can use the features from the extension directly in DuckDB. The template contains a single scalar function `python_udf()` that takes a string arguments and returns a string:
+Now we can use the features from the extension directly in DuckDB. Included in this extension is the ability to execute python functions. Bundled with this repository is a python file named 'udfs.py' that contains some example functions. You can invoke a function in this module by specifying the module name, the function name, and a single string argument to be passed to the function:
 ```
-D select python_udf('Jane') as result;
+D select python_udf('udfs', 'reverse', 'Jane') as result;
 ┌───────────────┐
 │    result     │
 │    varchar    │
