@@ -145,9 +145,13 @@ jobs:
         if [[ "$AWS_ACCESS_KEY_ID" == "" ]] ; then
           echo 'No key set, skipping'
         elif [[ "$GITHUB_REF" =~ ^(refs/tags/v.+)$ ]] ; then
+          echo "Uploading release tagged $GITHUB_REF";
           python3 -m pip install pip awscli
           ./scripts/extension-upload.sh python_udf ${{ github.ref_name }} $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME true
         elif [[ "$GITHUB_REF" =~ ^(refs/heads/main)$ ]] ; then
+          echo "Uploading tip of main branch $GITHUB_REF";
           python3 -m pip install pip awscli
           ./scripts/extension-upload.sh python_udf `git log -1 --format=%h` $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME false
+        else
+          echo "Build is for non tag on a branch other than main, skipping"
         fi
