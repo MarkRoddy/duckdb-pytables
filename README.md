@@ -28,7 +28,7 @@ Note these are not inherent limitations that can not be overcome, but presently 
 * Only Scalar functions are supported (table functions forthcoming)
 * Only string types support, but in the arugment and return types.
 * Python functions must accept a single argument. It must be a string.
-* Only presently compiles with Python3.9. Will not work with Python3.8, or Python3.10. Do not ask me about Python3.11.
+
 
 # Installation and Usage
 
