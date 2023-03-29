@@ -1,17 +1,36 @@
-Write user defined functions for DuckDB in CPython.
+A DuckDB extension for using Python based functions in SQL queries.
 
-# WIP Disclaimer
-You shouldn't use this. I mean, unless you want to. I'm not your dad. But be aware, this project is 100% a proof of concept at the moment.
+# Example
+Given a python script named `udfs.py` in your path with the following function:
+```python
+def reverse(input):
+    return input[::-1]
+```
 
-## Current Limitations
-Note these are not inherent limitations that can not be overcome, but are presently as yet overcome. Feel free to help with that!
+Using the `python_udf` extension, this function can be used in your SQL queries:
+```sql
+> select python_udf('udfs', 'reverse', 'foobar') as result;
+┌─────────┐
+│ result  │
+│ varchar │
+├─────────┤
+│ raboof  │
+└─────────┘
+```
+
+Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party libraries (assuming they fit within the current limitations, see next section for details).
+
+
+# Current Limitations
+Note these are not inherent limitations that can not be overcome, but presently have yet to be overcome. Feel free to help with that!
+
+* Binaries only available for Linux x64 architecture. Builds for OSX and Windows coming soon.
+* Only Scalar functions are supported (table functions forthcoming)
+* Only string types support, but in the arugment and return types.
+* Python functions must accept a single argument. It must be a string.
 * Only presently compiles with Python3.9. Will not work with Python3.8, or Python3.10. Do not ask me about Python3.11.
-* Not optimized for high throughput queries.
-* Only Scalar functions are supported (table functions would be great!)
-* Only string arugements and return values are supported.
 
 # Installation and Usage
-
 
 First, [install DuckDB](https://duckdb.org/docs/installation/).
 
