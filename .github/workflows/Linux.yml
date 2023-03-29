@@ -118,7 +118,7 @@ jobs:
           build/release/extension/python_udf/python_udf.duckdb_extension
 
     - uses: "marvinpinto/action-automatic-releases@latest"
-      if: github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/main'
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "latest"
