@@ -88,8 +88,11 @@ test_debug_python: debug_python
 test_release_python: release_python
 	cd test/python && python3 -m pytest
 
+check-format:
+	find src/ -iname *.hpp -o -iname *.cpp | xargs clang-format -Werror --sort-includes=0 -style=file --dry-run
+
 format:
-	find src/ -iname *.hpp -o -iname *.cpp | xargs clang-format --sort-includes=0 -style=file -i
+	find src/ -iname *.hpp -o -iname *.cpp | xargs clang-format -Werror --sort-includes=0 -style=file -i
 	cmake-format -i CMakeLists.txt
 
 update:

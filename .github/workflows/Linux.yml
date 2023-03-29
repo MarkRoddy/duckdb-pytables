@@ -113,6 +113,10 @@ jobs:
       run: |
         make test
 
+    - name: Code Format Check
+      run: |
+        make check-format
+        
     - uses: actions/upload-artifact@v2
       with:
         name: ${{matrix.arch}}-extensions
