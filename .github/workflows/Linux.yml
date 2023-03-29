@@ -80,6 +80,8 @@ jobs:
         aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
 
     - name: Tell me about your python install
+      # Debugging step, comment to re-enable
+      if: 0 == 1
       run: |
         ls -ld /usr/include/python*
         which python || echo "No 'python' executable"
