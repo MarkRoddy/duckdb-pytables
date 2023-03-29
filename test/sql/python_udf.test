@@ -16,3 +16,19 @@ query I
 SELECT python_udf('udfs', 'reverse', 'Sam');
 ----
 maS
+
+# Confirm a function from the standard library
+query I
+select python_udf('string', 'capwords', 'foo bar baz') as result;
+----
+Foo Bar Baz
+
+# Correctly handle when a module does not exist
+statement error
+select python_udf('udf', 'reverse', 'Jane') as result;
+Error: Invalid Error: No such module: udf
+
+# Correctly handle when a function does not exist
+statement error
+select python_udf('udfs', 'reverses', 'Jane') as result;
+Error: Invalid Error: No such function: reverses
