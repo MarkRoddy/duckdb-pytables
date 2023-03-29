@@ -117,6 +117,16 @@ jobs:
         path: |
           build/release/extension/python_udf/python_udf.duckdb_extension
 
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      if: github.ref == 'refs/heads/master'
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Automatic Build"
+        files: |
+          build/release/extension/python_udf/python_udf.duckdb_extension
+          
     - name: Deploy
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_ID }}
