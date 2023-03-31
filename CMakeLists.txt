@@ -10,7 +10,7 @@ find_package(Python REQUIRED COMPONENTS Development)
 include_directories(src/include ${Python_INCLUDE_DIRS})
 
 
-set(EXTENSION_SOURCES src/python_udf_extension.cpp src/pyscalar.cpp)
+set(EXTENSION_SOURCES src/python_udf_extension.cpp src/pyscalar.cpp src/pytable.cpp)
 add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
 
 set(PARAMETERS "-warnings")
