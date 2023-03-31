@@ -52,5 +52,4 @@ std::string executePythonFunction(const std::string &module_name, const std::str
 	return value;
 }
 
-
-}
+} // namespace pyudf
