@@ -4,5 +4,5 @@
 #include <duckdb/parser/tableref/table_function_ref.hpp>
 
 namespace pyudf {
-  duckdb::unique_ptr<duckdb::CreateTableFunctionInfo> GetPythonTableFunction();
+duckdb::unique_ptr<duckdb::CreateTableFunctionInfo> GetPythonTableFunction();
 }
