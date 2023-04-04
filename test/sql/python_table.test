@@ -14,19 +14,19 @@ require python_udf
 
 # Check that an invalid module is handled
 statement error
-select python_table('udfsss', 'table', 'Jane') as result;
+select python_table('udfsss', 'table', 'Jane', ['columnA']) as result;
 Error: Invalid Error: No such module: udfsss
 
 
 # Correctly handle when a function does not exist
 statement error
-select python_table('udfs', 'tablesssss', 'Jane') as result;
+select python_table('udfs', 'tablesssss', 'Jane', ['columnA'])) as result;
 Error: Invalid Error: No such function: tablesssss
 
 
 # Confirm the extension works
 query I
-SELECT * FROM python_table('udfs', 'table', ['columnA'])
+SELECT * FROM python_table('udfs', 'table', 'Jane', ['columnA'])
 ----
 a
  

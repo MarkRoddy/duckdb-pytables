@@ -11,6 +11,7 @@ namespace pyudf {
 struct PyScanBindData : public duckdb::TableFunctionData {
   std::string module_name;
   std::string function_name;
+  std::string funcion_argument;
   // A python function object
   PyObject* function;
 
@@ -61,14 +62,60 @@ void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, du
 	// auto records = stream->read(STANDARD_VECTOR_SIZE);
 
 	// auto read_records = 0;
-        std::string phrase = "a very long string";
-        for (int i = 0; i < phrase.length(); i++) {
-          std::string phrase_record = phrase.substr(i, 1);
-          output.SetValue(0, output.size(), duckdb::Value(phrase_record));
-          output.SetCardinality(output.size() + 1);
+        // std::string phrase = "a very long string";
+        // for (int i = 0; i < phrase.length(); i++) {
+        //   std::string phrase_record = phrase.substr(i, 1);
+        //   output.SetValue(0, output.size(), duckdb::Value(phrase_record));
+        //   output.SetCardinality(output.size() + 1);
+        // }
+        // local_state->done = true;
+
+
+	// Create the argument tuple
+	PyObject *arg = Py_BuildValue("(s)", bind_data->funcion_argument.c_str());
+        PyObject *result = PyObject_CallObject(bind_data->function, arg);
+        if (!result) {
+          std::cerr << "Error: function '" << bind_data->function_name << "' did not return a value\n";
+          return;
         }
+        if (!PyIter_Check(result)) {
+          std::cerr << "Error: function '" << bind_data->function_name << "' did not return an iterator\n";
+          return;
+        }
+
+        PyObject* row;
+        PyObject* item;
+        while ((row = PyIter_Next(result))) {
+          if (!PyList_Check(row)) {
+            std::cerr << "Error: Row record not List as expected\n";
+          } else if (PyList_Size(row) != 1) {
+            std::cerr << "Error: Row record did not contain exactly 1 column as expected\n";
+          } else {
+            item = PyList_GetItem(row, 0);
+            if (!PyUnicode_Check(item)) {
+              std::cerr << "Error: item in row record is not a string\n";
+            } else {
+              auto value = PyUnicode_AsUTF8(item);
+              output.SetValue(0, output.size(), duckdb::Value(value));
+              output.SetCardinality(output.size() + 1);
+            }
+            Py_DECREF(item);
+          }
+          Py_DECREF(row);
+        }
+        Py_DECREF(result);
         local_state->done = true;
 
+        // std::string phrase = "a very long string";
+        // for (int i = 0; i < phrase.length(); i++) {
+        //   std::string phrase_record = phrase.substr(i, 1);
+        //   output.SetValue(0, output.size(), duckdb::Value(phrase_record));
+        //   output.SetCardinality(output.size() + 1);
+        // }
+        // local_state->done = true;
+
+
+        
 
 	// for (auto &record : records)
 	//   {
@@ -102,10 +149,12 @@ duckdb::unique_ptr<duckdb::FunctionData> PyBind(duckdb::ClientContext &context, 
 	auto result = duckdb::make_unique<PyScanBindData>();
 	auto module_name = input.inputs[0].GetValue<std::string>();
         auto function_name = input.inputs[1].GetValue<std::string>();
-        auto column_names = duckdb::ListValue::GetChildren(input.inputs[2]);
+        auto pyargument = input.inputs[2].GetValue<std::string>();
+        auto column_names = duckdb::ListValue::GetChildren(input.inputs[3]);
 
         result->module_name = module_name;
         result->function_name = function_name;
+        result->funcion_argument = pyargument;
         result->function = get_python_function(module_name, function_name);
         if (NULL == result->function) {
           throw duckdb::IOException("Failed to load function");
@@ -150,7 +199,7 @@ duckdb::unique_ptr<duckdb::CreateTableFunctionInfo> GetPythonTableFunction() {
 	// duckdb::make_unique<duckdb::CreateTableFunctionInfo>(fasta_table_function_info);
 	auto py_table_function = duckdb::TableFunction(
                                                        "python_table",
-                                                       {duckdb::LogicalType::VARCHAR, duckdb::LogicalType::VARCHAR, duckdb::LogicalType::LIST(duckdb::LogicalType::VARCHAR)},
+                                                       {duckdb::LogicalType::VARCHAR, duckdb::LogicalType::VARCHAR, duckdb::LogicalType::VARCHAR, duckdb::LogicalType::LIST(duckdb::LogicalType::VARCHAR)},
 	    PyScan, PyBind, PyInitGlobalState, PyInitLocalState);
 
 	duckdb::CreateTableFunctionInfo py_table_function_info(py_table_function);
