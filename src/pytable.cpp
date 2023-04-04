@@ -1,4 +1,6 @@
 
+#include <Python.h>
+#include <iostream>
 #include <duckdb.hpp>
 #include <duckdb/parser/expression/constant_expression.hpp>
 #include <duckdb/parser/expression/function_expression.hpp>
@@ -7,7 +9,11 @@
 namespace pyudf {
 
 struct PyScanBindData : public duckdb::TableFunctionData {
-	std::string file_path;
+  std::string module_name;
+  std::string function_name;
+  // A python function object
+  PyObject* function;
+
 	// klibpp::SeqStreamIn *stream;
 };
 
@@ -15,6 +21,33 @@ struct PyScanLocalState : public duckdb::LocalTableFunctionState {
 	bool done = false;
 };
 
+struct PyScanGlobalState : public duckdb::GlobalTableFunctionState {
+	PyScanGlobalState() : duckdb::GlobalTableFunctionState() {
+	}  
+};
+
+PyObject* get_python_function(std::string module_name, std::string function_name) {
+    // Import the specified module
+  PyObject* module = PyImport_ImportModule(module_name.c_str());
+  if (!module) {
+    std::cerr << "Error: could not import module '" << module_name << "'\n";
+    return NULL;
+  }
+
+  // Get the specified function from the module
+  PyObject* function = PyObject_GetAttrString(module, function_name.c_str());
+  if (!function) {
+    std::cerr << "Error: could not find function '" << function_name << "' in module '" << module_name << "'\n";
+    return NULL;
+  } else if (!PyCallable_Check(function)) {
+    std::cerr << "Error: Function'" << function_name << "' in module '" << module_name << " is not a callable object'\n";
+    return NULL;
+  } else {
+    return function;
+  }
+    
+}
+  
 void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, duckdb::DataChunk &output) {
 	auto bind_data = (const PyScanBindData *)data.bind_data;
 	auto local_state = (PyScanLocalState *)data.local_state;
@@ -23,11 +56,19 @@ void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, du
 		return;
 	}
 
-	return;
+	// return;
 	// auto stream = bind_data->stream;
 	// auto records = stream->read(STANDARD_VECTOR_SIZE);
 
 	// auto read_records = 0;
+        std::string phrase = "a very long string";
+        for (int i = 0; i < phrase.length(); i++) {
+          std::string phrase_record = phrase.substr(i, 1);
+          output.SetValue(0, output.size(), duckdb::Value(phrase_record));
+          output.SetCardinality(output.size() + 1);
+        }
+        local_state->done = true;
+
 
 	// for (auto &record : records)
 	//   {
@@ -59,37 +100,35 @@ duckdb::unique_ptr<duckdb::FunctionData> PyBind(duckdb::ClientContext &context, 
                                                 std::vector<duckdb::LogicalType> &return_types,
                                                 std::vector<std::string> &names) {
 	auto result = duckdb::make_unique<PyScanBindData>();
-	auto file_name = input.inputs[0].GetValue<std::string>();
+	auto module_name = input.inputs[0].GetValue<std::string>();
+        auto function_name = input.inputs[1].GetValue<std::string>();
+        auto column_names = duckdb::ListValue::GetChildren(input.inputs[2]);
 
-	auto &fs = duckdb::FileSystem::GetFileSystem(context);
+        result->module_name = module_name;
+        result->function_name = function_name;
+        result->function = get_python_function(module_name, function_name);
+        if (NULL == result->function) {
+          throw duckdb::IOException("Failed to load function");
+        }
+        
+        auto iter = column_names.begin();
+        for(iter; iter < column_names.end(); iter++) {
+          // todo: (optionally?) source the schema from the function, maybe the column names too?
+          return_types.push_back(duckdb::LogicalType::VARCHAR);
+        }
 
-	if (!fs.FileExists(file_name)) {
-		throw duckdb::IOException("File does not exist: " + file_name);
-	}
-
-	result->file_path = file_name;
-	// result->stream = new klibpp::SeqStreamIn(result->file_path.c_str());
-	// result->stream = NULL;
-
-	return_types.push_back(duckdb::LogicalType::VARCHAR);
-	return_types.push_back(duckdb::LogicalType::VARCHAR);
-	return_types.push_back(duckdb::LogicalType::VARCHAR);
-
-	names.push_back("id");
-	names.push_back("description");
-	names.push_back("sequence");
+        iter = column_names.begin();
+        for(iter; iter < column_names.end(); iter++) {
+          names.push_back(duckdb::StringValue::Get(*iter));
+        }
 
 	return std::move(result);
 }
 
-struct PyScanGlobalState : public duckdb::GlobalTableFunctionState {
-	PyScanGlobalState() : duckdb::GlobalTableFunctionState() {
-	}
-};
-
 duckdb::unique_ptr<duckdb::GlobalTableFunctionState> PyInitGlobalState(duckdb::ClientContext &context,
                                                                        duckdb::TableFunctionInitInput &input) {
 	auto result = duckdb::make_unique<PyScanGlobalState>();
+        // result.function = get_python_function()
 	return std::move(result);
 }
 
@@ -110,7 +149,8 @@ duckdb::unique_ptr<duckdb::CreateTableFunctionInfo> GetPythonTableFunction() {
 	// fasta_table_function_info(fasta_table_function); return
 	// duckdb::make_unique<duckdb::CreateTableFunctionInfo>(fasta_table_function_info);
 	auto py_table_function = duckdb::TableFunction(
-	    "python_table", {duckdb::LogicalType::VARCHAR, duckdb::LogicalType::VARCHAR, duckdb::LogicalType::VARCHAR},
+                                                       "python_table",
+                                                       {duckdb::LogicalType::VARCHAR, duckdb::LogicalType::VARCHAR, duckdb::LogicalType::LIST(duckdb::LogicalType::VARCHAR)},
 	    PyScan, PyBind, PyInitGlobalState, PyInitLocalState);
 
 	duckdb::CreateTableFunctionInfo py_table_function_info(py_table_function);
