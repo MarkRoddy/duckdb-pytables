@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pyscalar.hpp"
 #include "duckdb.hpp"
 
 namespace duckdb {
