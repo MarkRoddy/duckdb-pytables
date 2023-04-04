@@ -31,6 +31,7 @@ PyObject *get_python_function(std::string module_name, std::string function_name
 	// Import the specified module
 	PyObject *module = PyImport_ImportModule(module_name.c_str());
 	if (!module) {
+		PyErr_Print();
 		std::cerr << "Error: could not import module '" << module_name << "'\n";
 		return NULL;
 	}
