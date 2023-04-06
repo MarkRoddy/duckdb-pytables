@@ -26,16 +26,18 @@ Foo Bar Baz
 # Correctly handle when a module does not exist
 statement error
 select python_udf('udf', 'reverse', 'Jane') as result;
-Error: Invalid Error: No such module: udf
+----
+Invalid Error: Failed to import module: udf
 
 # Correctly handle when a function does not exist
 statement error
 select python_udf('udfs', 'reverses', 'Jane') as result;
-Error: Invalid Error: No such function: reverses
+----
+Invalid Error: Failed to find function: reverses
 
 # Handle when a function generates an exception
-query I
+statement error
 select python_udf('udfs', 'scalar_throws_exception', 'Jane') as result;
 ----
-(empty)
+Invalid Error: This is an expected error
 

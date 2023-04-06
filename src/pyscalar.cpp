@@ -20,13 +20,16 @@ std::string executePythonFunction(const std::string &module_name, const std::str
 	if (!error) {
 		const char *value_c = PyUnicode_AsUTF8(retvalue);
 		value = std::string(value_c);
+                Py_XDECREF(retvalue);
+                Py_XDECREF(arguments);
+                return value;
+
 	} else {
-		error->print_error();
+		Py_XDECREF(arguments);
+		std::string err = error->message;
 		error->~PythonException();
+                throw std::runtime_error(err);
 	}
-	Py_XDECREF(retvalue);
-	Py_XDECREF(arguments);
-	return value;
 }
 
 } // namespace pyudf
