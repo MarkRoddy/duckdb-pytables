@@ -9,24 +9,24 @@
 namespace pyudf {
 std::string executePythonFunction(const std::string &module_name, const std::string &function_name,
                                   const std::string &argument) {
-              PythonFunction func(module_name, function_name);
-              PyObject* arguments = Py_BuildValue("(s)", argument.c_str());
+	PythonFunction func(module_name, function_name);
+	PyObject *arguments = Py_BuildValue("(s)", argument.c_str());
 
-              PyObject* retvalue;
-              PythonFunctionError* error;
-              std::tie(retvalue, error) = func.call(arguments);
-                
-              std::string value;
-              if (!error) {
-                const char *value_c = PyUnicode_AsUTF8(retvalue);
-                value = std::string(value_c);
-              } else {
-                error->print_error();
-                error->~PythonFunctionError();
-              }
-              Py_XDECREF(retvalue);
-              Py_XDECREF(arguments);
-              return value;
+	PyObject *retvalue;
+	PythonFunctionError *error;
+	std::tie(retvalue, error) = func.call(arguments);
+
+	std::string value;
+	if (!error) {
+		const char *value_c = PyUnicode_AsUTF8(retvalue);
+		value = std::string(value_c);
+	} else {
+		error->print_error();
+		error->~PythonFunctionError();
+	}
+	Py_XDECREF(retvalue);
+	Py_XDECREF(arguments);
+	return value;
 }
 
 } // namespace pyudf
