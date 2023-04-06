@@ -32,3 +32,10 @@ Error: Invalid Error: No such module: udf
 statement error
 select python_udf('udfs', 'reverses', 'Jane') as result;
 Error: Invalid Error: No such function: reverses
+
+# Handle when a function generates an exception
+query I
+select python_udf('udfs', 'scalar_throws_exception', 'Jane') as result;
+----
+(empty)
+
