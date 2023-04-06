@@ -12,10 +12,14 @@ public:
 
 	~PythonFunction();
 
-	std::pair<PyObject *, PythonException*> call(PyObject *args) const;
+	std::pair<PyObject *, PythonException *> call(PyObject *args) const;
 
-	std::string function_name() { return function_name_; }
-	std::string module_name() { return module_name_; }
+	std::string function_name() {
+		return function_name_;
+	}
+	std::string module_name() {
+		return module_name_;
+	}
 
 private:
 	std::string module_name_;

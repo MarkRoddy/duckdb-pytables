@@ -39,5 +39,5 @@ std::pair<PyObject *, PythonException *> PythonFunction::call(PyObject *args) co
 		return std::make_pair(nullptr, error);
 	} else {
 		return std::make_pair(result, nullptr);
-        }
+	}
 }
