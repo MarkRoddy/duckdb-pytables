@@ -1,8 +1,9 @@
 #include <python_function.hpp>
+#include <python_exception.hpp>
 #include <stdexcept>
 
 PythonFunction::PythonFunction(const std::string &module_name, const std::string &function_name)
-    : module_name(module_name), function_name(function_name), module(nullptr), function(nullptr) {
+    : module_name_(module_name), function_name_(function_name), module(nullptr), function(nullptr) {
 	PyObject *module_obj = PyImport_ImportModule(module_name.c_str());
 	if (!module_obj) {
 		PyErr_Print();
@@ -30,36 +31,13 @@ PythonFunction::~PythonFunction() {
 	Py_DECREF(module);
 }
 
-std::pair<PyObject *, PythonFunctionError *> PythonFunction::call(PyObject *args) const {
+std::pair<PyObject *, PythonException *> PythonFunction::call(PyObject *args) const {
 	PyObject *result = PyObject_CallObject(function, args);
 
 	if (result == nullptr) {
-		PythonFunctionError *error = new PythonFunctionError();
-		error->message = "";
-		error->traceback = "";
-
-		PyObject *ptype, *pvalue, *ptraceback;
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-
-		if (pvalue != nullptr) {
-			PyObject *py_type_str = PyObject_Str(ptype);
-			PyObject *py_value_str = PyObject_Str(pvalue);
-			PyObject *py_traceback_str = PyObject_Str(ptraceback);
-
-			error->message = PyUnicode_AsUTF8(py_value_str);
-			error->traceback = PyUnicode_AsUTF8(py_traceback_str);
-
-			Py_DECREF(py_type_str);
-			Py_DECREF(py_value_str);
-			Py_DECREF(py_traceback_str);
-
-			Py_DECREF(ptype);
-			Py_DECREF(pvalue);
-			Py_DECREF(ptraceback);
-		}
-
+		PythonException *error = new PythonException();
 		return std::make_pair(nullptr, error);
-	}
-
-	return std::make_pair(result, nullptr);
+	} else {
+		return std::make_pair(result, nullptr);
+        }
 }

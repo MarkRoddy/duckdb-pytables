@@ -14,19 +14,21 @@ require python_udf
 
 # Check that an invalid module is handled
 statement error
-select python_table('udfsss', 'table', ['Jane'], ['columnA']) as result;
-Error: Invalid Error: No such module: udfsss
+select * FROM python_table('udfsss', 'table', ['Jane'], ['columnA']);
+----
+Invalid Error: Failed to import module: udfsss
 
 
 # Correctly handle when a function does not exist
 statement error
-select python_table('udfs', 'tablesssss', ['Jane'], ['columnA'])) as result;
-Error: Invalid Error: No such function: tablesssss
+select * FROM python_table('udfs', 'tablesssss', ['Jane'], ['columnA']);
+----
+Invalid Error: Failed to find function: tablesssss
 
 
 # Confirm the extension works
 query I
-SELECT * FROM python_table('udfs', 'table', ['Jane'], ['columnA'])
+SELECT * FROM python_table('udfs', 'table', ['Jane'], ['columnA']);
 ----
 a
  
@@ -60,3 +62,16 @@ a
 r
 16
 
+# Expected behavior when a table function raises an exception
+statement error
+SELECT * FROM python_table('udfs', 'table_throws_exception', ['foo'], ['columnA']);
+----
+Invalid Error: This function raises an exception
+
+
+
+# Expected behavior when next() on the iterator causes an exception
+statement error
+SELECT * FROM python_table('udfs', 'iterator_throws_exception', ['foo'], ['columnA']);
+----
+Invalid Error: Third record raises an exception

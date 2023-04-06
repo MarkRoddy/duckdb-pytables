@@ -1,21 +1,21 @@
 
 #include <Python.h>
 #include <iostream>
+#include <stdexcept>
 #include <duckdb.hpp>
 #include <duckdb/parser/expression/constant_expression.hpp>
 #include <duckdb/parser/expression/function_expression.hpp>
 #include <pytable.hpp>
+#include "python_function.hpp"
 
 namespace pyudf {
 
 struct PyScanBindData : public duckdb::TableFunctionData {
-	std::string module_name;
-	std::string function_name;
-	// A python function object
-	PyObject *function;
+        PythonFunction* function;
 
-	// Function arguments coerced to a tuple used in Python calling semantics
-	PyObject *arguments;
+	// Function arguments coerced to a tuple used in Python calling semantics,
+        // todo: free after function execution is complete
+	PyObject* arguments;
 };
 
 struct PyScanLocalState : public duckdb::LocalTableFunctionState {
@@ -69,29 +69,6 @@ PyObject *duckdb_to_py(std::vector<duckdb::Value> &values) {
 	return py_tuple;
 }
 
-PyObject *get_python_function(std::string module_name, std::string function_name) {
-	// Import the specified module
-	PyObject *module = PyImport_ImportModule(module_name.c_str());
-	if (!module) {
-		PyErr_Print();
-		std::cerr << "Error: could not import module '" << module_name << "'\n";
-		return NULL;
-	}
-
-	// Get the specified function from the module
-	PyObject *function = PyObject_GetAttrString(module, function_name.c_str());
-	if (!function) {
-		std::cerr << "Error: could not find function '" << function_name << "' in module '" << module_name << "'\n";
-		return NULL;
-	} else if (!PyCallable_Check(function)) {
-		std::cerr << "Error: Function'" << function_name << "' in module '" << module_name
-		          << " is not a callable object'\n";
-		return NULL;
-	} else {
-		return function;
-	}
-}
-
 void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, duckdb::DataChunk &output) {
 	auto bind_data = (const PyScanBindData *)data.bind_data;
 	auto local_state = (PyScanLocalState *)data.local_state;
@@ -100,18 +77,23 @@ void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, du
 		return;
 	}
 
-	PyObject *result = PyObject_CallObject(bind_data->function, bind_data->arguments);
+        PyObject *result;
+	PythonException *error;
+	std::tie(result, error) = bind_data->function->call(bind_data->arguments);
 	if (!result) {
-		PyErr_Print();
-		throw duckdb::IOException("Error: function '" + bind_data->function_name + "' did not return a value\n");
+                Py_XDECREF(result);
+                std::string err = error->message;
+                error->~PythonException();
+                throw std::runtime_error(err);
 	} else if (!PyIter_Check(result)) {
-		throw duckdb::IOException("Error: function '" + bind_data->function_name + "' did not return an iterator\n");
+                Py_XDECREF(result);
+		throw std::runtime_error("Error: function '" + bind_data->function->function_name() + "' did not return an iterator\n");
 	}
 
 	PyObject *row;
 	PyObject *item;
 	while ((row = PyIter_Next(result))) {
-		if (!PyList_Check(row)) {
+          	if (!PyList_Check(row)) {
 			std::cerr << "Error: Row record not List as expected\n";
 			output.SetValue(0, output.size(), duckdb::Value(""));
 		} else if (PyList_Size(row) != 1) {
@@ -125,13 +107,23 @@ void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, du
 			} else {
 				auto value = PyUnicode_AsUTF8(item);
 				output.SetValue(0, output.size(), duckdb::Value(value));
-				// output.SetCardinality(output.size() + 1);
 			}
 			Py_DECREF(item);
 		}
 		Py_DECREF(row);
 		output.SetCardinality(output.size() + 1);
 	}
+
+        // PyIter_Next will return null if the iterator is exhausted or if an
+        // exception has occurred during resumption of the underlying function,
+        // so at this point we need to check which of these is the case.
+        if (PyErr_Occurred()) {
+          error = new PythonException();
+          std::string err = error->message;
+          error->~PythonException();
+          Py_DECREF(result);
+          throw std::runtime_error(err);
+        }
 	Py_DECREF(result);
 	local_state->done = true;
 }
@@ -145,12 +137,7 @@ duckdb::unique_ptr<duckdb::FunctionData> PyBind(duckdb::ClientContext &context, 
 	auto arguments = duckdb::ListValue::GetChildren(input.inputs[2]);
 	auto column_names = duckdb::ListValue::GetChildren(input.inputs[3]);
 
-	result->module_name = module_name;
-	result->function_name = function_name;
-	result->function = get_python_function(module_name, function_name);
-	if (NULL == result->function) {
-		throw duckdb::IOException("Failed to load function");
-	}
+        result->function = new PythonFunction(module_name, function_name);
 	result->arguments = duckdb_to_py(arguments);
 	if (NULL == result->arguments) {
 		throw duckdb::IOException("Failed coerce function arguments");

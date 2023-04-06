@@ -19,3 +19,12 @@ def table2(one_str_input, two_str_input, three_int_input):
     yield [str(three_int_input)]
 
 
+def table_throws_exception(input):
+    raise Exception("This function raises an exception")
+
+
+def iterator_throws_exception(input):
+    yield ["foo"]
+    yield ["bar"]
+    raise Exception("Third record raises an exception")
+

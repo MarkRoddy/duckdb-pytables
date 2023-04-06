@@ -13,7 +13,7 @@ std::string executePythonFunction(const std::string &module_name, const std::str
 	PyObject *arguments = Py_BuildValue("(s)", argument.c_str());
 
 	PyObject *retvalue;
-	PythonFunctionError *error;
+	PythonException *error;
 	std::tie(retvalue, error) = func.call(arguments);
 
 	std::string value;
@@ -22,7 +22,7 @@ std::string executePythonFunction(const std::string &module_name, const std::str
 		value = std::string(value_c);
 	} else {
 		error->print_error();
-		error->~PythonFunctionError();
+		error->~PythonException();
 	}
 	Py_XDECREF(retvalue);
 	Py_XDECREF(arguments);
