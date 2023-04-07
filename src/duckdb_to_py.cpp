@@ -4,7 +4,16 @@
 #include <Python.h>
 
 namespace pyudf {
-PyObject *duckdb_to_py(std::vector<duckdb::Value> &values) {
+  void Py_DecRefTuple(PyObject* tpl) {
+  for (Py_ssize_t i = 0; i < PyTuple_Size(tpl); i++) {
+    PyObject *item = PyTuple_GetItem(tpl, i);
+    Py_DECREF(item);
+  }
+
+  Py_DECREF(tpl);
+  }
+  
+  PyObject *duckdb_to_py(std::vector<duckdb::Value> &values) {
 	PyObject *py_tuple = PyTuple_New(values.size());
 
 	for (size_t i = 0; i < values.size(); i++) {
