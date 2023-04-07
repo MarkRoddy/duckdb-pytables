@@ -1,0 +1,77 @@
+# name: test/sql/python_table.test
+# description: test python_udf extension
+# group: [python_udf]
+
+# Before we load the extension, this will fail
+statement error
+SELECT columnA FROM python_table('udfs', 'table', ['columnA']);
+----
+Catalog Error: Table Function with name python_table does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require python_udf
+
+
+# Check that an invalid module is handled
+statement error
+select * FROM python_table('udfsss', 'table', ['Jane'], ['columnA']);
+----
+Invalid Error: Failed to import module: udfsss
+
+
+# Correctly handle when a function does not exist
+statement error
+select * FROM python_table('udfs', 'tablesssss', ['Jane'], ['columnA']);
+----
+Invalid Error: Failed to find function: tablesssss
+
+
+# Confirm the extension works
+query I
+SELECT * FROM python_table('udfs', 'table', ['Jane'], ['columnA']);
+----
+a
+ 
+v
+e
+r
+y
+ 
+l
+o
+n
+g
+ 
+s
+t
+r
+i
+n
+g
+
+
+# Confirm usage with multiple arguments
+query I
+SELECT * FROM python_table('udfs', 'table2', ['foo', 'bar', 16], ['columnA'])
+----
+f
+o
+o
+b
+a
+r
+16
+
+# Expected behavior when a table function raises an exception
+statement error
+SELECT * FROM python_table('udfs', 'table_throws_exception', ['foo'], ['columnA']);
+----
+Invalid Error: This function raises an exception
+
+
+
+# Expected behavior when next() on the iterator causes an exception
+statement error
+SELECT * FROM python_table('udfs', 'iterator_throws_exception', ['foo'], ['columnA']);
+----
+Invalid Error: Third record raises an exception

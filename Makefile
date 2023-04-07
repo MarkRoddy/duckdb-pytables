@@ -68,9 +68,11 @@ release_python: release
 test: test_release
 
 test_release: release
+	python3 udfs.py
 	./build/release/test/unittest --test-dir . "[sql]"
 
 test_debug: debug
+	python3 udfs.py
 	./build/debug/test/unittest --test-dir . "[sql]"
 
 # Client tests
