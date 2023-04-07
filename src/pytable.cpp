@@ -7,6 +7,7 @@
 #include <duckdb/parser/expression/function_expression.hpp>
 #include <pytable.hpp>
 #include "python_function.hpp"
+#include <duckdb_to_py.hpp>
 
 using namespace duckdb;
 
@@ -133,48 +134,6 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 		                std::to_string(logical_types.size()) + " columns were expected";
 		throw InvalidInputException(error_message);
 	}
-}
-
-PyObject *duckdb_to_py(std::vector<Value> &values) {
-	PyObject *py_tuple = PyTuple_New(values.size());
-
-	for (size_t i = 0; i < values.size(); i++) {
-		PyObject *py_value = nullptr;
-
-		switch (values[i].type().id()) {
-		case LogicalTypeId::BOOLEAN:
-			py_value = PyBool_FromLong(values[i].GetValue<bool>());
-			break;
-		case LogicalTypeId::TINYINT:
-			py_value = PyLong_FromLong(values[i].GetValue<int8_t>());
-			break;
-		case LogicalTypeId::SMALLINT:
-			py_value = PyLong_FromLong(values[i].GetValue<int16_t>());
-			break;
-		case LogicalTypeId::INTEGER:
-			py_value = PyLong_FromLong(values[i].GetValue<int32_t>());
-			break;
-		case LogicalTypeId::BIGINT:
-			py_value = PyLong_FromLongLong(values[i].GetValue<int64_t>());
-			break;
-		case LogicalTypeId::FLOAT:
-			py_value = PyFloat_FromDouble(values[i].GetValue<float>());
-			break;
-		case LogicalTypeId::DOUBLE:
-			py_value = PyFloat_FromDouble(values[i].GetValue<double>());
-			break;
-		case LogicalTypeId::VARCHAR:
-			py_value = PyUnicode_FromString(values[i].GetValue<std::string>().c_str());
-			break;
-		default:
-			Py_INCREF(Py_None);
-			py_value = Py_None;
-		}
-
-		PyTuple_SetItem(py_tuple, i, py_value);
-	}
-
-	return py_tuple;
 }
 
 PyObject *pyObjectToIterable(PyObject *py_object) {
