@@ -9,7 +9,7 @@
 #include "python_function.hpp"
 #include <duckdb_to_py.hpp>
 
-using namespace duckdb;
+#include <typeinfo>
 
 namespace pyudf {
 
