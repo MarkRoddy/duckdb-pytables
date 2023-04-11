@@ -8,9 +8,11 @@
 #include <pytable.hpp>
 #include "python_function.hpp"
 
+using namespace duckdb;
+
 namespace pyudf {
 
-struct PyScanBindData : public duckdb::TableFunctionData {
+struct PyScanBindData : public TableFunctionData {
 	PythonFunction *function;
 
 	// Function arguments coerced to a tuple used in Python calling semantics,
@@ -18,44 +20,44 @@ struct PyScanBindData : public duckdb::TableFunctionData {
 	PyObject *arguments;
 };
 
-struct PyScanLocalState : public duckdb::LocalTableFunctionState {
+struct PyScanLocalState : public LocalTableFunctionState {
 	bool done = false;
 };
 
-struct PyScanGlobalState : public duckdb::GlobalTableFunctionState {
-	PyScanGlobalState() : duckdb::GlobalTableFunctionState() {
+struct PyScanGlobalState : public GlobalTableFunctionState {
+	PyScanGlobalState() : GlobalTableFunctionState() {
 	}
 };
 
-PyObject *duckdb_to_py(std::vector<duckdb::Value> &values) {
+PyObject *duckdb_to_py(std::vector<Value> &values) {
 	PyObject *py_tuple = PyTuple_New(values.size());
 
 	for (size_t i = 0; i < values.size(); i++) {
 		PyObject *py_value = nullptr;
 
 		switch (values[i].type().id()) {
-		case duckdb::LogicalTypeId::BOOLEAN:
+		case LogicalTypeId::BOOLEAN:
 			py_value = PyBool_FromLong(values[i].GetValue<bool>());
 			break;
-		case duckdb::LogicalTypeId::TINYINT:
+		case LogicalTypeId::TINYINT:
 			py_value = PyLong_FromLong(values[i].GetValue<int8_t>());
 			break;
-		case duckdb::LogicalTypeId::SMALLINT:
+		case LogicalTypeId::SMALLINT:
 			py_value = PyLong_FromLong(values[i].GetValue<int16_t>());
 			break;
-		case duckdb::LogicalTypeId::INTEGER:
+		case LogicalTypeId::INTEGER:
 			py_value = PyLong_FromLong(values[i].GetValue<int32_t>());
 			break;
-		case duckdb::LogicalTypeId::BIGINT:
+		case LogicalTypeId::BIGINT:
 			py_value = PyLong_FromLongLong(values[i].GetValue<int64_t>());
 			break;
-		case duckdb::LogicalTypeId::FLOAT:
+		case LogicalTypeId::FLOAT:
 			py_value = PyFloat_FromDouble(values[i].GetValue<float>());
 			break;
-		case duckdb::LogicalTypeId::DOUBLE:
+		case LogicalTypeId::DOUBLE:
 			py_value = PyFloat_FromDouble(values[i].GetValue<double>());
 			break;
-		case duckdb::LogicalTypeId::VARCHAR:
+		case LogicalTypeId::VARCHAR:
 			py_value = PyUnicode_FromString(values[i].GetValue<std::string>().c_str());
 			break;
 		default:
@@ -69,7 +71,7 @@ PyObject *duckdb_to_py(std::vector<duckdb::Value> &values) {
 	return py_tuple;
 }
 
-void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, duckdb::DataChunk &output) {
+void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
 	auto bind_data = (const PyScanBindData *)data.bind_data;
 	auto local_state = (PyScanLocalState *)data.local_state;
 
@@ -96,18 +98,18 @@ void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, du
 	while ((row = PyIter_Next(result))) {
 		if (!PyList_Check(row)) {
 			std::cerr << "Error: Row record not List as expected\n";
-			output.SetValue(0, output.size(), duckdb::Value(""));
+			output.SetValue(0, output.size(), Value(""));
 		} else if (PyList_Size(row) != 1) {
 			std::cerr << "Error: Row record did not contain exactly 1 column as expected\n";
-			output.SetValue(0, output.size(), duckdb::Value(""));
+			output.SetValue(0, output.size(), Value(""));
 		} else {
 			item = PyList_GetItem(row, 0);
 			if (!PyUnicode_Check(item)) {
 				std::cerr << "Error: item in row record is not a string\n";
-				output.SetValue(0, output.size(), duckdb::Value(""));
+				output.SetValue(0, output.size(), Value(""));
 			} else {
 				auto value = PyUnicode_AsUTF8(item);
-				output.SetValue(0, output.size(), duckdb::Value(value));
+				output.SetValue(0, output.size(), Value(value));
 			}
 			Py_DECREF(item);
 		}
@@ -129,64 +131,65 @@ void PyScan(duckdb::ClientContext &context, duckdb::TableFunctionInput &data, du
 	local_state->done = true;
 }
 
-duckdb::unique_ptr<duckdb::FunctionData> PyBind(duckdb::ClientContext &context, duckdb::TableFunctionBindInput &input,
-                                                std::vector<duckdb::LogicalType> &return_types,
+unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
+                                                std::vector<LogicalType> &return_types,
                                                 std::vector<std::string> &names) {
-	auto result = duckdb::make_unique<PyScanBindData>();
+	auto result = make_unique<PyScanBindData>();
 	auto module_name = input.inputs[0].GetValue<std::string>();
 	auto function_name = input.inputs[1].GetValue<std::string>();
-	auto arguments = duckdb::ListValue::GetChildren(input.inputs[2]);
-	auto column_names = duckdb::ListValue::GetChildren(input.inputs[3]);
+        auto arguments = ListValue::GetChildren(input.inputs[2]);
+        auto column_names = ListValue::GetChildren(input.inputs[3]);
 
 	result->function = new PythonFunction(module_name, function_name);
 	result->arguments = duckdb_to_py(arguments);
 	if (NULL == result->arguments) {
-		throw duckdb::IOException("Failed coerce function arguments");
+		throw IOException("Failed coerce function arguments");
 	}
 
 	auto iter = column_names.begin();
 	for (iter; iter < column_names.end(); iter++) {
 		// todo: (optionally?) source the schema from the function, maybe the column names too?
-		return_types.push_back(duckdb::LogicalType::VARCHAR);
+		return_types.push_back(LogicalType::VARCHAR);
 	}
 
 	iter = column_names.begin();
 	for (iter; iter < column_names.end(); iter++) {
-		names.push_back(duckdb::StringValue::Get(*iter));
+		names.push_back(StringValue::Get(*iter));
 	}
 
 	return std::move(result);
 }
 
-duckdb::unique_ptr<duckdb::GlobalTableFunctionState> PyInitGlobalState(duckdb::ClientContext &context,
-                                                                       duckdb::TableFunctionInitInput &input) {
-	auto result = duckdb::make_unique<PyScanGlobalState>();
+unique_ptr<GlobalTableFunctionState> PyInitGlobalState(ClientContext &context,
+                                                                       TableFunctionInitInput &input) {
+	auto result = make_unique<PyScanGlobalState>();
 	// result.function = get_python_function()
 	return std::move(result);
 }
 
-duckdb::unique_ptr<duckdb::LocalTableFunctionState> PyInitLocalState(duckdb::ExecutionContext &context,
-                                                                     duckdb::TableFunctionInitInput &input,
-                                                                     duckdb::GlobalTableFunctionState *global_state) {
+unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context,
+                                                                     TableFunctionInitInput &input,
+                                                                     GlobalTableFunctionState *global_state) {
 	auto bind_data = (const PyScanBindData *)input.bind_data;
 	auto &gstate = (PyScanGlobalState &)*global_state;
 
-	auto local_state = duckdb::make_unique<PyScanLocalState>();
+	auto local_state = make_unique<PyScanLocalState>();
 
 	return std::move(local_state);
 }
 
-duckdb::unique_ptr<duckdb::CreateTableFunctionInfo> GetPythonTableFunction() {
-	auto py_table_function = duckdb::TableFunction("python_table",
-	                                               {duckdb::LogicalType::VARCHAR, duckdb::LogicalType::VARCHAR,
+unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
+	auto py_table_function = TableFunction("python_table",
+	                                               {LogicalType::VARCHAR, LogicalType::VARCHAR,
+                                                        /* Return Column Names + Types*/
+                                                        LogicalType::MAP(LogicalType::VARCHAR, LogicalType::VARCHAR),
 	                                                /* Python Function Arguments */
-	                                                duckdb::LogicalType::LIST(duckdb::LogicalType::ANY),
-	                                                /* Return Column Names */
-	                                                duckdb::LogicalType::LIST(duckdb::LogicalType::VARCHAR)},
+	                                                LogicalType::LIST(LogicalType::ANY),
+},
 	                                               PyScan, PyBind, PyInitGlobalState, PyInitLocalState);
 
-	duckdb::CreateTableFunctionInfo py_table_function_info(py_table_function);
-	return duckdb::make_unique<duckdb::CreateTableFunctionInfo>(py_table_function_info);
+	CreateTableFunctionInfo py_table_function_info(py_table_function);
+	return make_unique<CreateTableFunctionInfo>(py_table_function_info);
 }
 
 } // namespace pyudf
