@@ -137,24 +137,33 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	auto result = make_unique<PyScanBindData>();
 	auto module_name = input.inputs[0].GetValue<std::string>();
 	auto function_name = input.inputs[1].GetValue<std::string>();
-        auto arguments = ListValue::GetChildren(input.inputs[2]);
-        auto column_names = ListValue::GetChildren(input.inputs[3]);
+        auto names_and_types = input.inputs[2];
+        auto arguments = ListValue::GetChildren(input.inputs[3]);
 
+        auto &child_type = names_and_types.type();
+        if (child_type.id() != LogicalTypeId::STRUCT) {
+          throw BinderException("columns requires a struct as input");
+        }
+        auto &struct_children = StructValue::GetChildren(names_and_types);
+        D_ASSERT(StructType::GetChildCount(child_type) == struct_children.size());
+        for (idx_t i = 0; i < struct_children.size(); i++) {
+          auto &name = StructType::GetChildName(child_type, i);
+          auto &val = struct_children[i];
+          names.push_back(name);
+          if (val.type().id() != LogicalTypeId::VARCHAR) {
+            throw BinderException("we require a type specification as string");
+          }
+          return_types.emplace_back(TransformStringToLogicalType(StringValue::Get(val), context));
+        }
+        if (names.empty()) {
+          throw BinderException("require at least a single column as input!");
+        }
+
+        
 	result->function = new PythonFunction(module_name, function_name);
 	result->arguments = duckdb_to_py(arguments);
 	if (NULL == result->arguments) {
 		throw IOException("Failed coerce function arguments");
-	}
-
-	auto iter = column_names.begin();
-	for (iter; iter < column_names.end(); iter++) {
-		// todo: (optionally?) source the schema from the function, maybe the column names too?
-		return_types.push_back(LogicalType::VARCHAR);
-	}
-
-	iter = column_names.begin();
-	for (iter; iter < column_names.end(); iter++) {
-		names.push_back(StringValue::Get(*iter));
 	}
 
 	return std::move(result);
@@ -182,7 +191,9 @@ unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
 	auto py_table_function = TableFunction("python_table",
 	                                               {LogicalType::VARCHAR, LogicalType::VARCHAR,
                                                         /* Return Column Names + Types*/
-                                                        LogicalType::MAP(LogicalType::VARCHAR, LogicalType::VARCHAR),
+                                                        // LogicalType::STRUCT({}),
+                                                        LogicalType::ANY,
+                                                        //LogicalType::VARCHAR, LogicalType::VARCHAR),
 	                                                /* Python Function Arguments */
 	                                                LogicalType::LIST(LogicalType::ANY),
 },

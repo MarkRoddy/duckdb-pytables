@@ -11,6 +11,11 @@ def table(input):
     for char in "a very long string":
         yield [char]
 
+def index_chars(input):
+    for i, val in enumerate(input):
+        yield [i, val]
+
+
 def table2(one_str_input, two_str_input, three_int_input):
     for c in one_str_input:
         yield [c]
@@ -61,6 +66,11 @@ class TestUdfs(unittest.TestCase):
             next(iterator)
         except Exception as e:
             self.assertEquals("Third record raises an exception", str(e))
-                          
+
+    def test_index_chars(self):
+        actual = list(index_chars("foo"))
+        expected = [[0, 'f'], [1, 'o'], [2, 'o']]
+        self.assertEqual(actual, expected)
+
 if __name__ == '__main__':
     unittest.main()

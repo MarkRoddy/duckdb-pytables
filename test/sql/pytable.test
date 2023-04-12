@@ -49,18 +49,38 @@ i
 n
 g
 
-
-# Confirm usage with multiple arguments
+# Confirm the extension works
 query I
-SELECT * FROM python_table('udfs', 'table2', {'columnA': 'VARCHAR'}, ['foo', 'bar', 16])
+SELECT * FROM python_table('udfs', 'table', {'columnA': 'VARCHAR'}, ['Jane']);
 ----
-f
-o
-o
-b
 a
+ 
+v
+e
 r
-16
+y
+ 
+l
+o
+n
+g
+ 
+s
+t
+r
+i
+n
+g
+
+
+# Test mutliple columsn with diff data types
+query I
+SELECT columnA, columnB FROM python_table('udfs', 'table2', {'columnA': 'BIGINT', 'columnB': 'VARCHAR'}, ['foo'])
+----
+0 f
+1 o
+2 o
+
 
 # Expected behavior when a table function raises an exception
 statement error
