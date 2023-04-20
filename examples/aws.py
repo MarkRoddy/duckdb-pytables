@@ -8,9 +8,10 @@ def ec2_instances():
     SELECT * FROM python_table('aws', 'ec2_instances',
       {
         'instance_id': 'VARCHAR',
+        'name': 'VARCHAR',
         'instance_type': 'VARCHAR',
         'state': 'VARCHAR',
-        'key_name': 'VARCHAR',
+        'key_pair': 'VARCHAR',
         'platform': 'VARCHAR',
         'architecture': 'VARCHAR',
         'vpc_id': 'VARCHAR',
@@ -26,8 +27,14 @@ def ec2_instances():
             resv_id = resv['ReservationId']
             instances = resv['Instances']
             for i in instances:
+                instance_name = None
+                for pair in i.get('Tags', []):
+                    if pair['Key'] == 'Name':
+                        instance_name = pair['Value']
+                        break
                 yield (
                     i['InstanceId'],
+                    instance_name,
                     i['InstanceType'],
                     i['State']['Name'],
                     i['KeyName'],
