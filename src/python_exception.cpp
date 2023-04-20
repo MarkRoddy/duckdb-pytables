@@ -26,10 +26,17 @@ PythonException::PythonException() {
 		Py_DECREF(py_value_str);
 		Py_DECREF(py_traceback_str);
 
-		Py_DECREF(ptype);
-		Py_DECREF(pvalue);
+                /* I've only observed ptraceback coming back null, but to be safe we're checking
+                   each of these values. Otherwise, we have a segfault that masks a helpful
+                   Python error message.
+                */
+                if (ptype) {
+                  Py_DECREF(ptype);
+                }
+                if (pvalue) {
+                  Py_DECREF(pvalue);
+                }
                 if (ptraceback) {
-                  // Apparently this can come back null!
                   Py_DECREF(ptraceback);
                 }
 	}
