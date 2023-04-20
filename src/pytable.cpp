@@ -204,32 +204,24 @@ PyObject* pyObjectToIterable(PyObject* py_object) {
   }
   
  void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
-        std::cerr << "Starting my scan";
 	auto bind_data = (const PyScanBindData *)data.bind_data;
 	auto local_state = (PyScanLocalState *)data.local_state;
 
 	if (local_state->done) {
-          std::cerr << "Nothing to do, I'm done";
 		return;
 	}
 
 	PyObject *result;
 	PythonException *error;
-        std::cerr << "Getting the python function";
         auto func = bind_data->function;
-        std::cerr << "Getting the arguments";
         auto args = bind_data->arguments;
-        std::cerr << "Calilng the python function";
 	std::tie(result, error) = func->call(args);
-        std::cerr << "Python functino returned";
 	if (!result) {
-          std::cerr << "Python functino failed";
 		Py_XDECREF(result);
 		std::string err = error->message;
 		error->~PythonException();
 		throw std::runtime_error(err);
 	} else if (!PyIter_Check(result)) {
-          std::cerr << "Python functino not an interator";
 		Py_XDECREF(result);
 		throw std::runtime_error("Error: function '" + bind_data->function->function_name() +
 		                         "' did not return an iterator\n");
@@ -237,38 +229,27 @@ PyObject* pyObjectToIterable(PyObject* py_object) {
 
 	PyObject *row;
 	PyObject *item;
-        std::cerr << "Starting to iterate on the function return";
 	while ((row = PyIter_Next(result))) {
-          std::cerr << "Converting row to something iterable";
           auto iter_row = pyObjectToIterable(row);
           if (!iter_row) {
             // todo: cleanup?
-            std::cerr << "Row was not iterable";
             throw std::runtime_error("Error: Row record not iterable as expected");
           } else {
-            std::cerr << "Row is iterable, converting to python data types";
             std::string errmsg;
             std::vector<duckdb::Value> *duck_row;
             std::tie(duck_row, errmsg) = ConvertPyObjectsToDuckDBValues(iter_row, bind_data->return_types);
-            std::cerr << "Call to convert completed";
             if (!duck_row) {
               // todo: cleanup
-              std::cerr << "Error: no row returned";
               throw std::runtime_error(errmsg);
             } else {
-              std::cerr << "Copying Duckdb typed values to output";
               for(int i=0; i < duck_row->size(); i++){
                 auto v = duck_row->at(i);
                 // todo: Am I doing this correctly? I have no idea.
-                std::cerr << "INside copy loop, about to add";
                 output.SetValue(i, output.size(), v);
-                std::cerr << "INside copy loop, added";
               }
             }
             Py_DECREF(row);
-            std::cerr << "About to set new cardinality";
             output.SetCardinality(output.size() + 1);
-            std::cerr << "Set new cardinality";
           }
         }
 
@@ -313,20 +294,14 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
         if (names.empty()) {
           throw BinderException("require at least a single column as input!");
         }
-        std::cerr << "Getting result begin";
-        // auto begin = result->return_types.begin();
-        std::cerr << "Copying the list of types";
+        
         result->return_types = std::vector<LogicalType>(return_types);
-        std::cerr << "Done copying the list of types";
-
-        std::cerr << "Setting up Python function on retsult";
 	result->function = new PythonFunction(module_name, function_name);
 	result->arguments = duckdb_to_py(arguments);
 	if (NULL == result->arguments) {
 		throw IOException("Failed coerce function arguments");
 	}
 
-        std::cerr << "Return result";
 	return std::move(result);
 }
 
