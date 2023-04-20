@@ -32,12 +32,17 @@ PythonFunction::~PythonFunction() {
 }
 
 std::pair<PyObject *, PythonException *> PythonFunction::call(PyObject *args) const {
+        std::cerr << "Calling the actual python function";
 	PyObject *result = PyObject_CallObject(function, args);
+        std::cerr << "actual python function completed";
 
 	if (result == nullptr) {
+                std::cerr << "Collecting the pyhthon error";
 		PythonException *error = new PythonException();
+                std::cerr << "Returning error";
 		return std::make_pair(nullptr, error);
 	} else {
+                std::cerr << "Returning success";
 		return std::make_pair(result, nullptr);
 	}
 }

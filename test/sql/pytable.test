@@ -74,12 +74,12 @@ g
 
 
 # Test mutliple columsn with diff data types
-query I
-SELECT columnA, columnB FROM python_table('udfs', 'table2', {'columnA': 'BIGINT', 'columnB': 'VARCHAR'}, ['foo'])
+query II
+SELECT columnA, columnB FROM python_table('udfs', 'index_chars', {'columnA': 'INT', 'columnB': 'VARCHAR'}, ['foo'])
 ----
-0 f
-1 o
-2 o
+0	f
+1	o
+2 	o
 
 
 # Expected behavior when a table function raises an exception

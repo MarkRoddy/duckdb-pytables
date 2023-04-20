@@ -18,6 +18,7 @@ struct PyScanBindData : public TableFunctionData {
 	// Function arguments coerced to a tuple used in Python calling semantics,
 	// todo: free after function execution is complete
 	PyObject *arguments;
+        std::vector<LogicalType> return_types;
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -29,6 +30,106 @@ struct PyScanGlobalState : public GlobalTableFunctionState {
 	}
 };
 
+
+std::pair<std::vector<duckdb::Value>*, std::string> ConvertPyObjectsToDuckDBValues(PyObject* py_iterator, std::vector<duckdb::LogicalType> logical_types) {
+    std::vector<duckdb::Value>* result = new std::vector<duckdb::Value>();
+    std::string error_message;
+
+    if (!PyIter_Check(py_iterator)) {
+      error_message = "First argument must be an iterator";
+      return {nullptr, error_message};
+    }
+
+    PyObject* py_item;
+    size_t index = 0;
+
+    while ((py_item = PyIter_Next(py_iterator))) {
+      if (index >= logical_types.size()) {
+        Py_DECREF(py_item);
+        error_message = printf("The iterator<%ld> and the vector of LogicalTypes<%ld> have different lengths", index, logical_types.size());
+        delete result;
+        return {nullptr, error_message};
+      }
+
+      duckdb::Value value;
+      PyObject* py_value;
+      duckdb::LogicalType logical_type = logical_types[index];
+      bool conversion_failed = false;
+
+      switch (logical_type.id()) {
+      case duckdb::LogicalTypeId::BOOLEAN:
+        if (!PyBool_Check(py_item)) {
+          conversion_failed = true;
+        } else {
+          value = duckdb::Value(Py_True == py_item);
+        }
+        break;
+      case duckdb::LogicalTypeId::TINYINT:
+      case duckdb::LogicalTypeId::SMALLINT:
+      case duckdb::LogicalTypeId::INTEGER:
+        if (!PyLong_Check(py_item)) {
+          conversion_failed = true;
+        } else {
+          value = duckdb::Value((int32_t)PyLong_AsLong(py_item));
+        }
+        break;
+      // case duckdb::LogicalTypeId::BIGINT:
+      //   if (!PyLong_Check(py_item)) {
+      //     conversion_failed = true;
+      //   } else {
+      //     value = duckdb::Value(PyLong_AsLongLong(py_item));
+      //   }
+      //   break;
+      case duckdb::LogicalTypeId::FLOAT:
+      case duckdb::LogicalTypeId::DOUBLE:
+        if (!PyFloat_Check(py_item)) {
+          conversion_failed = true;
+        } else {
+          value = duckdb::Value(PyFloat_AsDouble(py_item));
+        }
+        break;
+      case duckdb::LogicalTypeId::VARCHAR:
+        if (!PyUnicode_Check(py_item)) {
+          conversion_failed = true;
+        } else {
+          py_value = PyUnicode_AsUTF8String(py_item);
+          value = duckdb::Value(PyBytes_AsString(py_value));
+          Py_DECREF(py_value);
+        }
+        break;
+        // Add more cases for other LogicalTypes here
+      default:
+        conversion_failed = true;
+      }
+
+      if (conversion_failed) {
+        // DUCKDB_API Value(std::nullptr_t val); // NOLINT: Allow implicit conversion from `nullptr_t`
+        value = duckdb::Value((std::nullptr_t)NULL);
+      }
+
+      result->push_back(value);
+      Py_DECREF(py_item);
+      index++;
+    }
+
+    if (PyErr_Occurred()) {
+      error_message = "Python runtime error occurred during iteration";
+      PyErr_Clear();
+      delete result;
+      return {nullptr, error_message};
+    }
+
+    if (index != logical_types.size()) {
+      error_message = printf("The iterator<%ld> and the vector of LogicalTypes<%ld> have different lengths", index, logical_types.size());
+      delete result;
+      return {nullptr, error_message};
+    }
+
+    return {result, error_message};
+}
+  
+
+  
 PyObject *duckdb_to_py(std::vector<Value> &values) {
 	PyObject *py_tuple = PyTuple_New(values.size());
 
@@ -71,23 +172,64 @@ PyObject *duckdb_to_py(std::vector<Value> &values) {
 	return py_tuple;
 }
 
-void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
+PyObject* pyObjectToIterable(PyObject* py_object) {
+    PyObject* collections_module = PyImport_ImportModule("collections");
+    if (!collections_module) {
+      PyErr_SetString(PyExc_RuntimeError, "Failed to import collections module");
+      return nullptr;
+    }
+
+    PyObject* iterable_class = PyObject_GetAttrString(collections_module, "Iterable");
+    if (!iterable_class) {
+      PyErr_SetString(PyExc_RuntimeError, "Failed to get Iterable class from collections module");
+      Py_DECREF(collections_module);
+      return nullptr;
+    }
+
+    int is_iterable = PyObject_IsInstance(py_object, iterable_class);
+    Py_DECREF(iterable_class);
+    Py_DECREF(collections_module);
+
+    if (!is_iterable) {
+      PyErr_SetString(PyExc_TypeError, "Input must be an iterable or an object that can be iterated upon");
+      return nullptr;
+    }
+
+    PyObject* py_iter = PyObject_GetIter(py_object);
+    if (!py_iter) {
+      PyErr_SetString(PyExc_RuntimeError, "Failed to get iterator from the input object");
+    }
+
+    return py_iter;
+  }
+  
+ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
+        std::cerr << "Starting my scan";
 	auto bind_data = (const PyScanBindData *)data.bind_data;
 	auto local_state = (PyScanLocalState *)data.local_state;
 
 	if (local_state->done) {
+          std::cerr << "Nothing to do, I'm done";
 		return;
 	}
 
 	PyObject *result;
 	PythonException *error;
-	std::tie(result, error) = bind_data->function->call(bind_data->arguments);
+        std::cerr << "Getting the python function";
+        auto func = bind_data->function;
+        std::cerr << "Getting the arguments";
+        auto args = bind_data->arguments;
+        std::cerr << "Calilng the python function";
+	std::tie(result, error) = func->call(args);
+        std::cerr << "Python functino returned";
 	if (!result) {
+          std::cerr << "Python functino failed";
 		Py_XDECREF(result);
 		std::string err = error->message;
 		error->~PythonException();
 		throw std::runtime_error(err);
 	} else if (!PyIter_Check(result)) {
+          std::cerr << "Python functino not an interator";
 		Py_XDECREF(result);
 		throw std::runtime_error("Error: function '" + bind_data->function->function_name() +
 		                         "' did not return an iterator\n");
@@ -95,27 +237,40 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 
 	PyObject *row;
 	PyObject *item;
+        std::cerr << "Starting to iterate on the function return";
 	while ((row = PyIter_Next(result))) {
-		if (!PyList_Check(row)) {
-			std::cerr << "Error: Row record not List as expected\n";
-			output.SetValue(0, output.size(), Value(""));
-		} else if (PyList_Size(row) != 1) {
-			std::cerr << "Error: Row record did not contain exactly 1 column as expected\n";
-			output.SetValue(0, output.size(), Value(""));
-		} else {
-			item = PyList_GetItem(row, 0);
-			if (!PyUnicode_Check(item)) {
-				std::cerr << "Error: item in row record is not a string\n";
-				output.SetValue(0, output.size(), Value(""));
-			} else {
-				auto value = PyUnicode_AsUTF8(item);
-				output.SetValue(0, output.size(), Value(value));
-			}
-			Py_DECREF(item);
-		}
-		Py_DECREF(row);
-		output.SetCardinality(output.size() + 1);
-	}
+          std::cerr << "Converting row to something iterable";
+          auto iter_row = pyObjectToIterable(row);
+          if (!iter_row) {
+            // todo: cleanup?
+            std::cerr << "Row was not iterable";
+            throw std::runtime_error("Error: Row record not iterable as expected");
+          } else {
+            std::cerr << "Row is iterable, converting to python data types";
+            std::string errmsg;
+            std::vector<duckdb::Value> *duck_row;
+            std::tie(duck_row, errmsg) = ConvertPyObjectsToDuckDBValues(iter_row, bind_data->return_types);
+            std::cerr << "Call to convert completed";
+            if (!duck_row) {
+              // todo: cleanup
+              std::cerr << "Error: no row returned";
+              throw std::runtime_error(errmsg);
+            } else {
+              std::cerr << "Copying Duckdb typed values to output";
+              for(int i=0; i < duck_row->size(); i++){
+                auto v = duck_row->at(i);
+                // todo: Am I doing this correctly? I have no idea.
+                std::cerr << "INside copy loop, about to add";
+                output.SetValue(i, output.size(), v);
+                std::cerr << "INside copy loop, added";
+              }
+            }
+            Py_DECREF(row);
+            std::cerr << "About to set new cardinality";
+            output.SetCardinality(output.size() + 1);
+            std::cerr << "Set new cardinality";
+          }
+        }
 
 	// PyIter_Next will return null if the iterator is exhausted or if an
 	// exception has occurred during resumption of the underlying function,
@@ -158,14 +313,20 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
         if (names.empty()) {
           throw BinderException("require at least a single column as input!");
         }
+        std::cerr << "Getting result begin";
+        // auto begin = result->return_types.begin();
+        std::cerr << "Copying the list of types";
+        result->return_types = std::vector<LogicalType>(return_types);
+        std::cerr << "Done copying the list of types";
 
-        
+        std::cerr << "Setting up Python function on retsult";
 	result->function = new PythonFunction(module_name, function_name);
 	result->arguments = duckdb_to_py(arguments);
 	if (NULL == result->arguments) {
 		throw IOException("Failed coerce function arguments");
 	}
 
+        std::cerr << "Return result";
 	return std::move(result);
 }
 
