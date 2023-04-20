@@ -22,14 +22,6 @@ def prompt(input_phrase, num_responses = 5):
             ]
         )
     for choice in completion.choices:
-        # {
-        #     "finish_reason": "stop",
-        #     "index": 0,
-        #     "message": {
-        #         "content": "Greetings! How may I assist you today?",
-        #         "role": "assistant"
-        #         }
-        # },
         yield(
             choice['index'],
             choice['message']['content'],
