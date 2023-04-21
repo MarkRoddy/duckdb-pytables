@@ -31,14 +31,14 @@ Note you don't *need* to write your own python functions. This extension will al
 Since anything you can do in Python can now show up in DuckDB as a table, the world is your oyster here. In particular, it's trivial to make any external resource that has a python library associated with it show up as a database table. Some things you might want to try (all of which can be found in the [examples/ directory](examples/)). Note, be sure to include the relevant file from the `examples/` directory in your Python path or these won't work.
 
 ### Query your EC2 Instances
-![Query EC2](http://images/query-ec2.png)
+![Query EC2](images/query-ec2.png)
 
 ### Query ChatGPT
-![Query ChatGPT](http://images/query-chatgpt.png)
+![Query ChatGPT](images/query-chatgpt.png)
 
 ### Query S3 Bucket Objects
 Note this queries the names of objects themselves, not their contents. This can be useful for combing through buckets that have massive amounts of objects in them.
-![Query S3 Objects](http://images/query-list-bucket.png)
+![Query S3 Objects](images/query-list-bucket.png)
 
 # Current Limitations
 Note these are not inherent limitations that can not be overcome, but presently have yet to be overcome. Feel free to help with that!
