@@ -3,14 +3,13 @@ cmake_minimum_required(VERSION 2.8.12)
 # Set extension name here
 set(TARGET_NAME python_udf)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 set(EXTENSION_NAME ${TARGET_NAME}_extension)
 project(${TARGET_NAME})
 
 find_package(Python REQUIRED COMPONENTS Development)
 include_directories(src/include ${Python_INCLUDE_DIRS})
 
-
-# set(EXTENSION_SOURCES src/*.cpp src/pyscalar.cpp src/pytable.cpp src/python_function.cpp)
 FILE(GLOB EXTENSION_SOURCES src/*.cpp)
 add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
 

@@ -37,7 +37,7 @@ clean:
 # Main build
 debug:
 	mkdir -p  build/debug && \
-	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Debug ${BUILD_FLAGS} -S ./duckdb/ -B build/debug && \
+	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DENABLE_SANITIZER=TRUE -DFORCE_ASSERT=TRUE -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Debug ${BUILD_FLAGS} -S ./duckdb/ -B build/debug && \
 	cmake --build build/debug --config Debug
 
 release:
@@ -76,7 +76,7 @@ test_release: release
 
 test_debug: debug
 	python3 udfs.py
-	./build/debug/test/unittest --test-dir . "[sql]"
+	ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
 
 # Client tests
 test_js: test_debug_js
