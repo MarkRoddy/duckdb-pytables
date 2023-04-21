@@ -20,8 +20,8 @@ struct PyScanBindData : public TableFunctionData {
 	PyObject *arguments;
 	std::vector<LogicalType> return_types;
 
-        // todo: free after consumed + rename to something better, py_row_iterator?
-        PyObject *function_result_iterable;
+	// todo: free after consumed + rename to something better, py_row_iterator?
+	PyObject *function_result_iterable;
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -49,8 +49,8 @@ ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::Logica
 	while ((py_item = PyIter_Next(py_iterator))) {
 		if (index >= logical_types.size()) {
 			Py_DECREF(py_item);
-			error_message = "A row with " + std::to_string(index+1) + 
-                          " values was detected though " + std::to_string(logical_types.size()) +" columns were expected",
+			error_message = "A row with " + std::to_string(index + 1) + " values was detected though " +
+			                std::to_string(logical_types.size()) + " columns were expected",
 			delete result;
 			return {nullptr, error_message};
 		}
@@ -125,8 +125,8 @@ ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::Logica
 	}
 
 	if (index != logical_types.size()) {
-          error_message = "A row with " + std::to_string(index) + " values was detected though " +
-            std::to_string(logical_types.size()) + " columns were expected";
+		error_message = "A row with " + std::to_string(index) + " values was detected though " +
+		                std::to_string(logical_types.size()) + " columns were expected";
 		delete result;
 		return {nullptr, error_message};
 	}
@@ -215,10 +215,10 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 		return;
 	}
 
-        PyObject *result = bind_data->function_result_iterable;        
-        
+	PyObject *result = bind_data->function_result_iterable;
+
 	PyObject *row;
-        int read_records = 0;
+	int read_records = 0;
 	while ((read_records < STANDARD_VECTOR_SIZE) && (row = PyIter_Next(result))) {
 		auto iter_row = pyObjectToIterable(row);
 		if (!iter_row) {
@@ -229,8 +229,8 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 			std::vector<duckdb::Value> *duck_row;
 			std::tie(duck_row, errmsg) = ConvertPyObjectsToDuckDBValues(iter_row, bind_data->return_types);
 			if (!duck_row) {
-                          // todo: cleanup
-                          throw std::runtime_error(errmsg);
+				// todo: cleanup
+				throw std::runtime_error(errmsg);
 			} else {
 				for (long unsigned int i = 0; i < duck_row->size(); i++) {
 					auto v = duck_row->at(i);
@@ -240,7 +240,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 			}
 			Py_DECREF(row);
 			output.SetCardinality(output.size() + 1);
-                        read_records++;
+			read_records++;
 		}
 	}
 
@@ -248,18 +248,18 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	// exception has occurred during resumption of the underlying function,
 	// so at this point we need to check which of these is the case.
 	if (PyErr_Occurred()) {
-                PythonException *error;
+		PythonException *error;
 		error = new PythonException();
 		std::string err = error->message;
 		error->~PythonException();
 		Py_DECREF(result);
 		throw std::runtime_error(err);
 	}
-        if (!row) {
-          // We've exhausted our iterator
-          local_state->done = true;
-          Py_DECREF(result);
-        }
+	if (!row) {
+		// We've exhausted our iterator
+		local_state->done = true;
+		Py_DECREF(result);
+	}
 }
 
 unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
@@ -296,22 +296,21 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw IOException("Failed coerce function arguments");
 	}
 
-
-        // Invoke the function and grab a copy of the iterable it returns.
-        PyObject* iter;
-        PythonException *error;
-        std::tie(iter, error) = result->function->call(result->arguments);
-        if (!iter) {
-          Py_XDECREF(iter);
-          std::string err = error->message;
-          error->~PythonException();
-          throw std::runtime_error(err);
-        } else if (!PyIter_Check(iter)) {
-          Py_XDECREF(iter);
-            throw std::runtime_error("Error: function '" + result->function->function_name() +
-                                     "' did not return an iterator\n");
-        }
-        result->function_result_iterable = iter;
+	// Invoke the function and grab a copy of the iterable it returns.
+	PyObject *iter;
+	PythonException *error;
+	std::tie(iter, error) = result->function->call(result->arguments);
+	if (!iter) {
+		Py_XDECREF(iter);
+		std::string err = error->message;
+		error->~PythonException();
+		throw std::runtime_error(err);
+	} else if (!PyIter_Check(iter)) {
+		Py_XDECREF(iter);
+		throw std::runtime_error("Error: function '" + result->function->function_name() +
+		                         "' did not return an iterator\n");
+	}
+	result->function_result_iterable = iter;
 	return std::move(result);
 }
 
@@ -323,7 +322,7 @@ unique_ptr<GlobalTableFunctionState> PyInitGlobalState(ClientContext &context, T
 
 unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, TableFunctionInitInput &input,
                                                      GlobalTableFunctionState *global_state) {
-        // Leaving tehese commented out in case we need them in the future.
+	// Leaving tehese commented out in case we need them in the future.
 	// auto bind_data = (const PyScanBindData *)input.bind_data;
 	// auto &gstate = (PyScanGlobalState &)*global_state;
 
