@@ -19,6 +19,9 @@ struct PyScanBindData : public TableFunctionData {
 	// todo: free after function execution is complete
 	PyObject *arguments;
 	std::vector<LogicalType> return_types;
+
+        // todo: free after consumed + rename to something better, py_row_iterator?
+        PyObject *function_result_iterable;
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -212,25 +215,11 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 		return;
 	}
 
-	PyObject *result;
-	PythonException *error;
-	auto func = bind_data->function;
-	auto args = bind_data->arguments;
-	std::tie(result, error) = func->call(args);
-	if (!result) {
-		Py_XDECREF(result);
-		std::string err = error->message;
-		error->~PythonException();
-		throw std::runtime_error(err);
-	} else if (!PyIter_Check(result)) {
-		Py_XDECREF(result);
-		throw std::runtime_error("Error: function '" + bind_data->function->function_name() +
-		                         "' did not return an iterator\n");
-	}
-
+        PyObject *result = bind_data->function_result_iterable;        
+        
 	PyObject *row;
-	PyObject *item;
-	while ((row = PyIter_Next(result))) {
+        int read_records = 0;
+	while ((read_records < STANDARD_VECTOR_SIZE) && (row = PyIter_Next(result))) {
 		auto iter_row = pyObjectToIterable(row);
 		if (!iter_row) {
 			// todo: cleanup?
@@ -243,7 +232,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 				// todo: cleanup
 				throw std::runtime_error(errmsg);
 			} else {
-				for (int i = 0; i < duck_row->size(); i++) {
+				for (long unsigned int i = 0; i < duck_row->size(); i++) {
 					auto v = duck_row->at(i);
 					// todo: Am I doing this correctly? I have no idea.
 					output.SetValue(i, output.size(), v);
@@ -251,6 +240,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 			}
 			Py_DECREF(row);
 			output.SetCardinality(output.size() + 1);
+                        read_records++;
 		}
 	}
 
@@ -258,14 +248,18 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	// exception has occurred during resumption of the underlying function,
 	// so at this point we need to check which of these is the case.
 	if (PyErr_Occurred()) {
+                PythonException *error;
 		error = new PythonException();
 		std::string err = error->message;
 		error->~PythonException();
 		Py_DECREF(result);
 		throw std::runtime_error(err);
 	}
-	Py_DECREF(result);
-	local_state->done = true;
+        if (!row) {
+          // We've exhausted our iterator
+          local_state->done = true;
+          Py_DECREF(result);
+        }
 }
 
 unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
@@ -302,6 +296,22 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw IOException("Failed coerce function arguments");
 	}
 
+
+        // Invoke the function and grab a copy of the iterable it returns.
+        PyObject* iter;
+        PythonException *error;
+        std::tie(iter, error) = result->function->call(result->arguments);
+        if (!iter) {
+          Py_XDECREF(iter);
+          std::string err = error->message;
+          error->~PythonException();
+          throw std::runtime_error(err);
+        } else if (!PyIter_Check(iter)) {
+          Py_XDECREF(iter);
+            throw std::runtime_error("Error: function '" + result->function->function_name() +
+                                     "' did not return an iterator\n");
+        }
+        result->function_result_iterable = iter;
 	return std::move(result);
 }
 
@@ -313,8 +323,9 @@ unique_ptr<GlobalTableFunctionState> PyInitGlobalState(ClientContext &context, T
 
 unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, TableFunctionInitInput &input,
                                                      GlobalTableFunctionState *global_state) {
-	auto bind_data = (const PyScanBindData *)input.bind_data;
-	auto &gstate = (PyScanGlobalState &)*global_state;
+        // Leaving tehese commented out in case we need them in the future.
+	// auto bind_data = (const PyScanBindData *)input.bind_data;
+	// auto &gstate = (PyScanGlobalState &)*global_state;
 
 	auto local_state = make_unique<PyScanLocalState>();
 
