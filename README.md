@@ -1,7 +1,9 @@
 A DuckDB extension for using Python based functions in SQL queries.
 
-# Example
-Given a python script named `udfs.py` in your path with the following function:
+# Table Function Example
+This extension includes a DuckDB Table Function which invokes a Python function you specify, and exposes the records it returns as a database table.
+
+As an example, given a python script named `udfs.py` in your path with the following function:
 ```python
 def sentence_to_columns(sentence, rows):
     """
