@@ -2,20 +2,27 @@ A DuckDB extension for using Python based functions in SQL queries.
 
 # Example
 Given a python script named `udfs.py` in your path with the following function:
-```python
-def reverse(input):
-    return input[::-1]
+```pytdef sentence_to_columns(sentence, rows):
+    """
+    Generates a table with a column for each word in 'sentence'. Will
+    repeat the sentence for 'row' number of records.
+    """
+    for _ in range(int(rows)):
+        yield sentence.split(" ")
 ```
 
-Using the `python_udf` extension, this function can be used in your SQL queries:
+Using the `python_table` function in a SQL query, you can call this Python function and query its output.
 ```sql
-> select python_udf('udfs', 'reverse', 'foobar') as result;
-┌─────────┐
-│ result  │
-│ varchar │
-├─────────┤
-│ raboof  │
-└─────────┘
+> SELECT * FROM python_table('udfs', 'sentence_to_columns',
+   {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'},
+   ['hello my friend', 2]);
+┌─────────┬─────────┬─────────┐
+│ columnA │ columnB │ columnC │
+│ varchar │ varchar │ varchar │
+├─────────┼─────────┼─────────┤
+│ hello   │ my      │ friend  │
+│ hello   │ my      │ friend  │
+└─────────┴─────────┴─────────┘
 ```
 
 Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party libraries (assuming they fit within the current limitations, see next section for details).
@@ -25,10 +32,9 @@ Note you don't *need* to write your own python functions. This extension will al
 Note these are not inherent limitations that can not be overcome, but presently have yet to be overcome. Feel free to help with that!
 
 * Binaries only available for Linux x64 architecture. Builds for OSX and Windows coming soon.
-* Only Scalar functions are supported (table functions forthcoming)
-* Only string types support, but in the arugment and return types.
-* Python functions must accept a single argument. It must be a string.
-
+* Only Table functions are supported (scalarn functions forthcoming)
+* Only positional argument invocation on Python functions allowed at this time.
+* Not all DuckDB and Python datatypes have been fully mapped. Please file an issue if you need one supported.
 
 # Installation and Usage
 
@@ -44,17 +50,26 @@ INSTALL python_udf;
 LOAD python_udf;
 ```
 
-You can now use any Python function in your path as part of a query. Example:
-```sql
-> select python_udf('string', 'capwords', 'foo bar baz') as result;
-┌─────────────┐
-│   result    │
-│   varchar   │
-├─────────────┤
-│ Foo Bar Baz │
-└─────────────┘
->
-```
+## Writing Python Functions for Use as Tables
+Python functions can accept an arbitrary number of primitive data which can be invoked in a positional manner.
+
+These functions must return an interator (or use the 'yield' syntax). Each value in this iterator will represent
+a single row in the database table. As such, the number of values in each row must be consistent across all rows,
+and it must match the number of columns specified when the function is invoked from SQL. Additionally, the data
+type for each value should be convertable to the column data type specified. If the conversion is not possible a
+null value will be substituted.
+
+## Invoking from SQL
+Below is a description of the `python_table()` DuckDB function which exposes Python functions as tables within DuckDB. Note
+that this function is still a work in progress, and as such you should expect the argument syntax of this function to change.
+
+The `python_table` function requires four arguments:
+
+1. module: The module that contains the function or callable you wish to invoke. Note this string must be importable. If the import fails the SQL query will fail.
+1. function: The name of the function to be invoked. A function or callable with this name must exist in the module, or the query will fail.
+1. column_names_and_types: a DuckDB struct mapping column names to their underlying DuckDB data types.
+1. arguments: arugments to the Python function to be invoked.
+
 
 ## Setting the Unsigned Option
 CLI:

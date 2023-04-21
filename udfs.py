@@ -48,6 +48,14 @@ def num_columns(val, num_rows, num_cols):
             row.append(val)
         yield row
 
+def sentence_to_columns(sentence, rows):
+    """
+    Generates a table with a column for each word in 'sentence'. Will
+    repeat the sentence for 'row' number of records.
+    """
+    for _ in range(int(rows)):
+        yield sentence.split(" ")
+
 import unittest
 
 class TestUdfs(unittest.TestCase):
@@ -95,5 +103,13 @@ class TestUdfs(unittest.TestCase):
             ]
         self.assertEqual(actual, expected)
 
+    def test_sentence_to_columns(self):
+        actual = list(sentence_to_columns('hello my friend', 3))
+        expected = [
+            ['hello', 'my', 'friend'],
+            ['hello', 'my', 'friend'],
+            ['hello', 'my', 'friend'],
+            ]
+        self.assertEqual(actual, expected)
 if __name__ == '__main__':
     unittest.main()

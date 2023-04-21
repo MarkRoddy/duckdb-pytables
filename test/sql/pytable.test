@@ -12,6 +12,17 @@ Catalog Error: Table Function with name python_table does not exist!
 require python_udf
 
 
+# Confirm our example function for the README works as expected
+query III
+SELECT * FROM python_table('udfs', 'sentence_to_columns',
+  {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'},
+  ['hello my friend', 2]);
+----
+hello	my	friend
+hello	my	friend
+
+
+
 # Check that an invalid module is handled
 statement error
 select * FROM python_table('udfsss', 'table', {'columnA': 'VARCHAR'}, ['Jane']);
@@ -108,3 +119,4 @@ statement error
 SELECT * FROM python_table('udfs', 'num_columns', {'columnA': 'VARCHAR', 'columnB': 'VARCHAR'}, [0, 10, 1]);
 ----
 foob ar baz
+
