@@ -49,8 +49,8 @@ ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::Logica
 	while ((py_item = PyIter_Next(py_iterator))) {
 		if (index >= logical_types.size()) {
 			Py_DECREF(py_item);
-			error_message = printf("The iterator<%ld> and the vector of LogicalTypes<%ld> have different lengths",
-			                       index, logical_types.size());
+			error_message = "A row with " + std::to_string(index+1) + 
+                          " values was detected though " + std::to_string(logical_types.size()) +" columns were expected",
 			delete result;
 			return {nullptr, error_message};
 		}
@@ -125,8 +125,8 @@ ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::Logica
 	}
 
 	if (index != logical_types.size()) {
-		error_message = printf("The iterator<%ld> and the vector of LogicalTypes<%ld> have different lengths", index,
-		                       logical_types.size());
+          error_message = "A row with " + std::to_string(index) + " values was detected though " +
+            std::to_string(logical_types.size()) + " columns were expected";
 		delete result;
 		return {nullptr, error_message};
 	}
@@ -229,8 +229,8 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 			std::vector<duckdb::Value> *duck_row;
 			std::tie(duck_row, errmsg) = ConvertPyObjectsToDuckDBValues(iter_row, bind_data->return_types);
 			if (!duck_row) {
-				// todo: cleanup
-				throw std::runtime_error(errmsg);
+                          // todo: cleanup
+                          throw std::runtime_error(errmsg);
 			} else {
 				for (long unsigned int i = 0; i < duck_row->size(); i++) {
 					auto v = duck_row->at(i);
