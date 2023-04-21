@@ -18,7 +18,7 @@ ifeq ($(GEN),ninja)
 	FORCE_COLOR=-DFORCE_COLORED_OUTPUT=1
 endif
 
-BUILD_FLAGS=-DEXTENSION_STATIC_BUILD=1 -DBUILD_TPCH_EXTENSION=1 -DBUILD_PARQUET_EXTENSION=1 ${OSX_BUILD_UNIVERSAL_FLAG} ${STATIC_LIBCPP}
+BUILD_FLAGS=-DEXTENSION_STATIC_BUILD=1 -DBUILD_TPCH_EXTENSION=0 -DBUILD_PARQUET_EXTENSION=0 ${OSX_BUILD_UNIVERSAL_FLAG} ${STATIC_LIBCPP}
 
 CLIENT_FLAGS :=
 
@@ -37,7 +37,7 @@ clean:
 # Main build
 debug:
 	mkdir -p  build/debug && \
-	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Debug ${BUILD_FLAGS} -S ./duckdb/ -B build/debug && \
+	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DENABLE_SANITIZER=TRUE -DFORCE_ASSERT=TRUE -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Debug ${BUILD_FLAGS} -S ./duckdb/ -B build/debug && \
 	cmake --build build/debug --config Debug
 
 release:
@@ -45,24 +45,11 @@ release:
 	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Release ${BUILD_FLAGS} -S ./duckdb/ -B build/release && \
 	cmake --build build/release --config Release
 
-# Client build
-debug_js: CLIENT_FLAGS=-DBUILD_NODE=1 -DBUILD_JSON_EXTENSION=1
-debug_js: debug
+extension-release:
+	cmake --build build/release --config Release
 
-debug_r: CLIENT_FLAGS=-DBUILD_R=1
-debug_r: debug
-
-debug_python: CLIENT_FLAGS=-DBUILD_PYTHON=1 -DBUILD_JSON_EXTENSION=1 -DBUILD_FTS_EXTENSION=1 -DBUILD_TPCH_EXTENSION=1 -DBUILD_VISUALIZER_EXTENSION=1 -DBUILD_TPCDS_EXTENSION=1
-debug_python: debug
-
-release_js: CLIENT_FLAGS=-DBUILD_NODE=1 -DBUILD_JSON_EXTENSION=1
-release_js: release
-
-release_r: CLIENT_FLAGS=-DBUILD_R=1
-release_r: release
-
-release_python: CLIENT_FLAGS=-DBUILD_PYTHON=1 -DBUILD_JSON_EXTENSION=1 -DBUILD_FTS_EXTENSION=1 -DBUILD_TPCH_EXTENSION=1 -DBUILD_VISUALIZER_EXTENSION=1 -DBUILD_TPCDS_EXTENSION=1
-release_python: release
+extension-debug:
+	cmake --build build/debug --config Debug
 
 # Main tests
 test: test_release
@@ -73,22 +60,7 @@ test_release: release
 
 test_debug: debug
 	python3 udfs.py
-	./build/debug/test/unittest --test-dir . "[sql]"
-
-# Client tests
-test_js: test_debug_js
-test_debug_js: debug_js
-	cd duckdb/tools/nodejs && npm run test-path -- "../../../test/nodejs/**/*.js"
-
-test_release_js: release_js
-	cd duckdb/tools/nodejs && npm run test-path -- "../../../test/nodejs/**/*.js"
-
-test_python: test_debug_python
-test_debug_python: debug_python
-	cd test/python && python3 -m pytest
-
-test_release_python: release_python
-	cd test/python && python3 -m pytest
+	ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
 
 check-format:
 	find src/ -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -Werror --sort-includes=0 -style=file --dry-run
