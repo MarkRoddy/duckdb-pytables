@@ -2,7 +2,8 @@ A DuckDB extension for using Python based functions in SQL queries.
 
 # Example
 Given a python script named `udfs.py` in your path with the following function:
-```pytdef sentence_to_columns(sentence, rows):
+```python
+def sentence_to_columns(sentence, rows):
     """
     Generates a table with a column for each word in 'sentence'. Will
     repeat the sentence for 'row' number of records.
