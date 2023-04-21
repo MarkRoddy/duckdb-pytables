@@ -114,6 +114,7 @@ ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::Logica
 	}
 
 	if (PyErr_Occurred()) {
+		// todo: use our Python exception wrapper
 		error_message = "Python runtime error occurred during iteration";
 		PyErr_Clear();
 		delete result;

@@ -95,3 +95,16 @@ statement error
 SELECT * FROM python_table('udfs', 'iterator_throws_exception', {'columnA': 'VARCHAR'}, ['foo']);
 ----
 Invalid Error: Third record raises an exception
+
+
+# Check handling when more columns are returned than expected
+statement error
+SELECT * FROM python_table('udfs', 'num_columns', {'columnA': 'VARCHAR'}, [0 , 10, 2]);
+----
+foob ar baz
+
+# Check handling when less columns are returned than expected
+statement error
+SELECT * FROM python_table('udfs', 'num_columns', {'columnA': 'VARCHAR', 'columnB': 'VARCHAR'}, [0, 10, 1]);
+----
+foob ar baz
