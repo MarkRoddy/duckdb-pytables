@@ -4,7 +4,7 @@
 
 # Before we load the extension, this will fail
 statement error
-SELECT columnA FROM python_table('udfs', 'table', {'columnA': 'VARCHAR'}, ['Jane']);
+SELECT columnA FROM python_table('udfs:table', 'Jane', columns={'columnA': 'VARCHAR'});
 ----
 Catalog Error: Table Function with name python_table does not exist!
 
@@ -14,9 +14,8 @@ require python_udf
 
 # Confirm our example function for the README works as expected
 query III
-SELECT * FROM python_table('udfs', 'sentence_to_columns',
-  {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'},
-  ['hello my friend', 2]);
+SELECT * FROM python_table('udfs:sentence_to_columns', 'hello my friend', 2,
+  columns = {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'});
 ----
 hello	my	friend
 hello	my	friend
@@ -25,21 +24,21 @@ hello	my	friend
 
 # Check that an invalid module is handled
 statement error
-select * FROM python_table('udfsss', 'table', {'columnA': 'VARCHAR'}, ['Jane']);
+select * FROM python_table('udfsss:table', 'Jane', columns={'columnA': 'VARCHAR'});
 ----
 Invalid Error: Failed to import module: udfsss
 
 
 # Correctly handle when a function does not exist
 statement error
-select * FROM python_table('udfs', 'tablesssss', {'columnA': 'VARCHAR'}, ['Jane']);
+select * FROM python_table('udfs:tablesssss', 'Jane', columns={'columnA': 'VARCHAR'});
 ----
 Invalid Error: Failed to find function: tablesssss
 
 
 # Confirm the extension works
 query I
-SELECT * FROM python_table('udfs', 'table', {'columnA': 'VARCHAR'}, ['Jane']);
+SELECT * FROM python_table('udfs:table', 'Jane', columns={'columnA': 'VARCHAR'});
 ----
 a
  
@@ -62,7 +61,7 @@ g
 
 # Confirm the extension works
 query I
-SELECT * FROM python_table('udfs', 'table', {'columnA': 'VARCHAR'}, ['Jane']);
+SELECT * FROM python_table('udfs:table', 'Jane', columns={'columnA': 'VARCHAR'});
 ----
 a
  
@@ -86,7 +85,7 @@ g
 
 # Test mutliple columsn with diff data types
 query II
-SELECT columnA, columnB FROM python_table('udfs', 'index_chars', {'columnA': 'INT', 'columnB': 'VARCHAR'}, ['foo'])
+SELECT columnA, columnB FROM python_table('udfs:index_chars', 'foo', columns={'columnA': 'INT', 'columnB': 'VARCHAR'})
 ----
 0	f
 1	o
@@ -95,7 +94,7 @@ SELECT columnA, columnB FROM python_table('udfs', 'index_chars', {'columnA': 'IN
 
 # Expected behavior when a table function raises an exception
 statement error
-SELECT * FROM python_table('udfs', 'table_throws_exception', {'columnA': 'VARCHAR'}, ['foo']);
+SELECT * FROM python_table('udfs:table_throws_exception', 'foo', columns={'columnA': 'VARCHAR'});
 ----
 Invalid Error: This function raises an exception
 
@@ -103,20 +102,20 @@ Invalid Error: This function raises an exception
 
 # Expected behavior when next() on the iterator causes an exception
 statement error
-SELECT * FROM python_table('udfs', 'iterator_throws_exception', {'columnA': 'VARCHAR'}, ['foo']);
+SELECT * FROM python_table('udfs:iterator_throws_exception', 'foo', columns={'columnA': 'VARCHAR'});
 ----
 Invalid Error: Third record raises an exception
 
 
 # Check handling when more columns are returned than expected
 statement error
-SELECT * FROM python_table('udfs', 'num_columns', {'columnA': 'VARCHAR'}, [0 , 10, 2]);
+SELECT * FROM python_table('udfs:num_columns', 0 , 10, 2, columns={'columnA': 'VARCHAR'});
 ----
 A row with 2 values was detected though 1 columns were expected
 
 # Check handling when less columns are returned than expected
 statement error
-SELECT * FROM python_table('udfs', 'num_columns', {'columnA': 'VARCHAR', 'columnB': 'VARCHAR'}, [0, 10, 1]);
+SELECT * FROM python_table('udfs:num_columns', 0, 10, 1, columns={'columnA': 'VARCHAR', 'columnB': 'VARCHAR'});
 ----
 A row with 1 values was detected though 2 columns were expected
 

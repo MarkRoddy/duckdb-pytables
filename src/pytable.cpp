@@ -33,6 +33,17 @@ struct PyScanGlobalState : public GlobalTableFunctionState {
 	}
 };
 
+std::pair<std::string, std::string> parse_func_specifier(std::string specifier) {
+  auto delim_location = specifier.find(":");
+  if (delim_location == std::string::npos) {
+    throw InvalidInputException("Function specifier lacks a ':' to delineate module and function");
+  } else {
+    auto module = specifier.substr(0, delim_location);
+    auto function = specifier.substr(delim_location+1, (specifier.length() - delim_location));
+    return {module, function};
+  }
+}
+  
 std::pair<std::vector<duckdb::Value> *, std::string>
 ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types) {
 	std::vector<duckdb::Value> *result = new std::vector<duckdb::Value>();
@@ -264,15 +275,40 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 
 unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
                                 std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
-	auto result = make_unique<PyScanBindData>();
-	auto module_name = input.inputs[0].GetValue<std::string>();
-	auto function_name = input.inputs[1].GetValue<std::string>();
-	auto names_and_types = input.inputs[2];
-	auto arguments = ListValue::GetChildren(input.inputs[3]);
+  auto result = make_unique<PyScanBindData>();
+  auto names_and_types = input.named_parameters["columns"];
 
+  auto params = input.named_parameters;
+  std::string module_name;
+  std::string function_name;
+  std::vector<Value> arguments;
+  if ((0 < params.count("module")) && (0 < params.count("func"))) {
+    module_name = input.named_parameters["module"].GetValue<std::string>();
+    function_name = input.named_parameters["func"].GetValue<std::string>();
+    arguments = input.inputs;
+  } else if ((0 == params.count("module")) && (0 == params.count("func"))) {
+    // Neither module nor func specified, infer this from arg list.
+    auto func_spec_value = input.inputs[0];
+    if (func_spec_value.type().id() != LogicalTypeId::VARCHAR) {
+      throw InvalidInputException("First argument must be string specifying 'module:func' if name parameters not supplied");
+    }
+    auto func_specifier = func_spec_value.GetValue<std::string>();
+    std::tie(module_name, function_name) = parse_func_specifier(func_specifier);
+
+    /* Since we had to infer our functions specifier from the argument list, we treat
+       everything after the first argument as input to the python function. */
+    arguments = std::vector<Value>(input.inputs.begin()+1, input.inputs.end());
+  } else if (0 < params.count("module")) {
+    throw InvalidInputException("Module specified w/o a corresponding function");
+  } else if (0 < params.count("func")) {
+    throw InvalidInputException("Function specified w/o a corresponding module");
+  } else {
+    throw InvalidInputException("I don't know how logic works");
+  }
+        
 	auto &child_type = names_and_types.type();
 	if (child_type.id() != LogicalTypeId::STRUCT) {
-		throw BinderException("columns requires a struct as input");
+		throw InvalidInputException("columns requires a struct as input");
 	}
 	auto &struct_children = StructValue::GetChildren(names_and_types);
 	D_ASSERT(StructType::GetChildCount(child_type) == struct_children.size());
@@ -325,27 +361,18 @@ unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, 
 	// Leaving tehese commented out in case we need them in the future.
 	// auto bind_data = (const PyScanBindData *)input.bind_data;
 	// auto &gstate = (PyScanGlobalState &)*global_state;
-
 	auto local_state = make_unique<PyScanLocalState>();
 
 	return std::move(local_state);
 }
 
 unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
-	auto py_table_function = TableFunction("python_table",
-	                                       {
-	                                           LogicalType::VARCHAR,
-	                                           LogicalType::VARCHAR,
-	                                           /* Return Column Names + Types*/
-	                                           // LogicalType::STRUCT({}),
-	                                           LogicalType::ANY,
-	                                           // LogicalType::VARCHAR, LogicalType::VARCHAR),
-	                                           /* Python Function Arguments */
-	                                           LogicalType::LIST(LogicalType::ANY),
-	                                       },
-	                                       PyScan, PyBind, PyInitGlobalState, PyInitLocalState);
-
-	CreateTableFunctionInfo py_table_function_info(py_table_function);
+	auto py_table_function = TableFunction("python_table", {}, PyScan, PyBind, PyInitGlobalState, PyInitLocalState);
+	py_table_function.varargs = LogicalType::ANY;
+	py_table_function.named_parameters["module"] = LogicalType::VARCHAR;
+        py_table_function.named_parameters["func"] = LogicalType::VARCHAR;
+        py_table_function.named_parameters["columns"] = LogicalType::ANY;
+        CreateTableFunctionInfo py_table_function_info(py_table_function);
 	return make_unique<CreateTableFunctionInfo>(py_table_function_info);
 }
 
