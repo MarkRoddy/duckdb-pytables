@@ -275,7 +275,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 
 unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
                                 std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
-	auto result = make_unique<PyScanBindData>();
+	auto result = make_uniq<PyScanBindData>();
 	auto names_and_types = input.named_parameters["columns"];
 
 	auto params = input.named_parameters;
@@ -352,7 +352,7 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 }
 
 unique_ptr<GlobalTableFunctionState> PyInitGlobalState(ClientContext &context, TableFunctionInitInput &input) {
-	auto result = make_unique<PyScanGlobalState>();
+	auto result = make_uniq<PyScanGlobalState>();
 	// result.function = get_python_function()
 	return std::move(result);
 }
@@ -362,19 +362,21 @@ unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, 
 	// Leaving tehese commented out in case we need them in the future.
 	// auto bind_data = (const PyScanBindData *)input.bind_data;
 	// auto &gstate = (PyScanGlobalState &)*global_state;
-	auto local_state = make_unique<PyScanLocalState>();
+	auto local_state = make_uniq<PyScanLocalState>();
 
 	return std::move(local_state);
 }
 
 unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
-	auto py_table_function = TableFunction("python_table", {}, PyScan, PyBind, PyInitGlobalState, PyInitLocalState);
+	auto py_table_function = TableFunction("python_table", {},
+                                               PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
+
 	py_table_function.varargs = LogicalType::ANY;
 	py_table_function.named_parameters["module"] = LogicalType::VARCHAR;
 	py_table_function.named_parameters["func"] = LogicalType::VARCHAR;
 	py_table_function.named_parameters["columns"] = LogicalType::ANY;
 	CreateTableFunctionInfo py_table_function_info(py_table_function);
-	return make_unique<CreateTableFunctionInfo>(py_table_function_info);
+	return make_uniq<CreateTableFunctionInfo>(py_table_function_info);
 }
 
 } // namespace pyudf
