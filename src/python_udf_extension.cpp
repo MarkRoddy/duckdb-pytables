@@ -23,7 +23,7 @@ inline void Python_udfScalarFun(duckdb::DataChunk &args, duckdb::ExpressionState
 
         auto lambda = 	    [&](duckdb::string_t module_name, duckdb::string_t func_name, duckdb::Vector &list_vector) {
                               auto lists_size = ListVector::GetListSize(list_vector);
-                              auto &child_vector = ListVector::GetEntry(child_vector);
+                              // auto &child_vector = ListVector::GetEntry(child_vector);
                               // child_vector.Flatten(lists_size);
 
                               // auto arguments = duckdb::ListValue::GetChildren(list_vector);
