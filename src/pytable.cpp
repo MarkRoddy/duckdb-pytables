@@ -273,60 +273,6 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	}
 }
 
-unique_ptr<FunctionData> PyBindNoVarArgs(ClientContext &context, TableFunctionBindInput &input,
-                                std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
-  auto result = make_uniq<PyScanBindData>();
-  auto module_name = input.inputs[0].GetValue<std::string>();
-  auto function_name = input.inputs[1].GetValue<std::string>();
-  auto names_and_types = input.inputs[2];
-  auto arguments = ListValue::GetChildren(input.inputs[3]);
-
-  auto &child_type = names_and_types.type();
-  if (child_type.id() != LogicalTypeId::STRUCT) {
-    throw BinderException("columns requires a struct as input");
-  }
-  auto &struct_children = StructValue::GetChildren(names_and_types);
-  D_ASSERT(StructType::GetChildCount(child_type) == struct_children.size());
-  for (idx_t i = 0; i < struct_children.size(); i++) {
-    auto &name = StructType::GetChildName(child_type, i);
-    auto &val = struct_children[i];
-    names.push_back(name);
-    if (val.type().id() != LogicalTypeId::VARCHAR) {
-      throw BinderException("we require a type specification as string");
-    }
-    return_types.emplace_back(TransformStringToLogicalType(StringValue::Get(val), context));
-  }
-  if (names.empty()) {
-    throw BinderException("require at least a single column as input!");
-  }
-
-  result->return_types = std::vector<LogicalType>(return_types);
-  result->function = new PythonFunction(module_name, function_name);
-  result->arguments = duckdb_to_py(arguments);
-  if (NULL == result->arguments) {
-    throw IOException("Failed coerce function arguments");
-  }
-
-  // Invoke the function and grab a copy of the iterable it returns.
-  PyObject *iter;
-  PythonException *error;
-  std::tie(iter, error) = result->function->call(result->arguments);
-  if (!iter) {
-    Py_XDECREF(iter);
-    std::string err = error->message;
-    error->~PythonException();
-    throw std::runtime_error(err);
-  } else if (!PyIter_Check(iter)) {
-    Py_XDECREF(iter);
-    throw std::runtime_error("Error: function '" + result->function->function_name() +
-                             "' did not return an iterator\n");
-  }
-  result->function_result_iterable = iter;
-  return std::move(result);
-
-}
-
-  
 unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
                                 std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
 	auto result = make_uniq<PyScanBindData>();
@@ -422,34 +368,14 @@ unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, 
 }
 
 unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
+	auto py_table_function = TableFunction("python_table", {},
+                                               PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
 
-  	// TableFunctionSet read_csv_auto("read_csv_auto");
-	// read_csv_auto.AddFunction(ReadCSVTableFunction::GetAutoFunction());
-	// read_csv_auto.AddFunction(ReadCSVTableFunction::GetAutoFunction(true));
-	// set.AddFunction(read_csv_auto);
-        TableFunctionSet python_table("python_table");
-        auto old_style = TableFunction("python_table",
-                                               {
-                                                 LogicalType::VARCHAR,
-                                                   LogicalType::VARCHAR,
-                                                   /* Return Column Names + Types*/
-                                                   // LogicalType::STRUCT({}),
-                                                   LogicalType::ANY,
-                                                   // LogicalType::VARCHAR, LogicalType::VARCHAR),
-                                                   /* Python Function Arguments */
-                                                   LogicalType::LIST(LogicalType::ANY),
-                                               },
-                                               PyScan, (table_function_bind_t)PyBindNoVarArgs, PyInitGlobalState, PyInitLocalState);
-        python_table.AddFunction(old_style);
-        
-	auto new_style = TableFunction({}, PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
-	new_style.varargs = LogicalType::ANY;
-	new_style.named_parameters["module"] = LogicalType::VARCHAR;
-	new_style.named_parameters["func"] = LogicalType::VARCHAR;
-	new_style.named_parameters["columns"] = LogicalType::ANY;
-        python_table.AddFunction(new_style);
-        
-	CreateTableFunctionInfo py_table_function_info(python_table);
+	py_table_function.varargs = LogicalType::ANY;
+	py_table_function.named_parameters["module"] = LogicalType::VARCHAR;
+	py_table_function.named_parameters["func"] = LogicalType::VARCHAR;
+	py_table_function.named_parameters["columns"] = LogicalType::ANY;
+	CreateTableFunctionInfo py_table_function_info(py_table_function);
 	return make_uniq<CreateTableFunctionInfo>(py_table_function_info);
 }
 
