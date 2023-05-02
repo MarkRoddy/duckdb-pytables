@@ -21,6 +21,9 @@ submod_check: duckdb
 		echo "Found submodule at ${OBSV_TAG} as expected"; \
 	fi
 
+submod: pull
+	cd duckdb && git co ${DDB_TAG}
+
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJ_DIR := $(dir $(MKFILE_PATH))
 
