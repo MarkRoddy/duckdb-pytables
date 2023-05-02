@@ -2,12 +2,11 @@
 
 
 OBSV_TAG := $(shell git submodule status|cut -d '(' -f 2|cut -d ')' -f 1)
-# OBSV_TAG := $(shell git submodule status)
-DDB_TAG := $(shell basename `pwd`|sed 's/^duck-python-udf-ddb\(v[0-9.]*\)-.*/\1/')
+DDB_TAG := $(shell basename `pwd`|sed 's/^duckdb-python-udf-\(.*\)-[a-z]*/\1/')
 ifeq (${DDB_TAG}, "")
 	DDB_TAG=${OBSV_TAG}
 endif
-BUILD_FLAVOR=$(shell basename `pwd`|sed 's/^duck-python-udf-ddbv[0-9.]*-\(.*\)/\1/')
+BUILD_FLAVOR=$(shell basename `pwd`|sed 's/^duckdb-python-udf-.*-\([a-z]*\)/\1/')
 ifeq (${BUILD_FLAVOR}, "")
 	BUILD_FLAVOR=release
 endif
