@@ -1,7 +1,7 @@
 .PHONY: all clean format debug release duckdb_debug duckdb_release pull update
 
 
-OBSV_TAG := $(shell git submodule status|cut -d '(' -f 2|cut -d ')' -f 1)
+OBSV_TAG := $(shell cd duckdb && (git symbolic-ref --short HEAD 2>/dev/null || git describe --exact-match --tags HEAD))
 DDB_TAG := $(shell basename `pwd`|sed 's/^duckdb-python-udf-\(.*\)-[a-z]*/\1/')
 ifeq (${DDB_TAG}, "")
 	DDB_TAG=${OBSV_TAG}
