@@ -219,14 +219,14 @@ PyObject *pyObjectToIterable(PyObject *py_object) {
 }
 
 void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
-	auto bind_data = (const PyScanBindData *)data.bind_data;
-	auto local_state = (PyScanLocalState *)data.local_state;
+	auto bind_data = data.bind_data->Cast<PyScanBindData>();
+	auto local_state = data.local_state->Cast<PyScanLocalState>();
 
-	if (local_state->done) {
+	if (local_state.done) {
 		return;
 	}
 
-	PyObject *result = bind_data->function_result_iterable;
+	PyObject *result = bind_data.function_result_iterable;
 
 	PyObject *row;
 	int read_records = 0;
@@ -238,7 +238,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 		} else {
 			std::string errmsg;
 			std::vector<duckdb::Value> *duck_row;
-			std::tie(duck_row, errmsg) = ConvertPyObjectsToDuckDBValues(iter_row, bind_data->return_types);
+			std::tie(duck_row, errmsg) = ConvertPyObjectsToDuckDBValues(iter_row, bind_data.return_types);
 			if (!duck_row) {
 				// todo: cleanup
 				throw std::runtime_error(errmsg);
@@ -268,7 +268,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	}
 	if (!row) {
 		// We've exhausted our iterator
-		local_state->done = true;
+		local_state.done = true;
 		Py_DECREF(result);
 	}
 }
