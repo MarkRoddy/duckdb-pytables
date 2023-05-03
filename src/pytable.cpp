@@ -368,8 +368,8 @@ unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, 
 }
 
 unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
-	auto py_table_function = TableFunction("python_table", {},
-                                               PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
+	auto py_table_function =
+	    TableFunction("python_table", {}, PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
 
 	py_table_function.varargs = LogicalType::ANY;
 	py_table_function.named_parameters["module"] = LogicalType::VARCHAR;

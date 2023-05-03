@@ -40,7 +40,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 	python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
 	catalog.CreateFunction(*con.context, python_udf_fun_info);
-        
+
 	// pyudf::GetPythonTableFunction();
 	auto python_table = pyudf::GetPythonTableFunction();
 	catalog.CreateTableFunction(context, python_table.get());
