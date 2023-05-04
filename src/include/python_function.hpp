@@ -17,7 +17,8 @@ public:
 
 	~PythonFunction();
 
-	std::pair<PyObject *, PythonException *> call(PyObject *args) const;
+        std::pair<PyObject *, PythonException *> call(PyObject *args, PyObject *kwargs) const;
+        std::pair<PyObject *, PythonException *> call(PyObject *args) const;
 
 	std::string function_name() {
 		return function_name_;

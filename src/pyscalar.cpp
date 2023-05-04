@@ -27,7 +27,8 @@ static void PyScalarFunction(DataChunk &args, ExpressionState &state, Vector &re
 			auto value = column.GetValue(row);
 			duck_args.emplace_back(value);
 		}
-		auto pyargs = duckdb_to_py(duck_args);
+		auto pyargs = duckdbs_to_pys(duck_args);
+
 		PyObject *pyresult;
 		PythonException *error;
 		std::tie(pyresult, error) = func.call(pyargs);
@@ -49,6 +50,9 @@ static void PyScalarFunction(DataChunk &args, ExpressionState &state, Vector &re
 CreateScalarFunctionInfo GetPythonScalarFunction() {
 	auto scalar_func = ScalarFunction("python_udf", {LogicalType::VARCHAR}, LogicalType::VARCHAR, PyScalarFunction);
 	scalar_func.varargs = LogicalType::ANY;
+
+        // 'named_parameters' does not appear to be supported for scalar functions
+        // scalar_func.named_parameters["kwargs"] = LogicalType::ANY;
 	CreateScalarFunctionInfo py_scalar_function_info(scalar_func);
 	return CreateScalarFunctionInfo(py_scalar_function_info);
 }

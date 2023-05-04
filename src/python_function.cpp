@@ -49,6 +49,17 @@ PythonFunction::~PythonFunction() {
 	Py_DECREF(module);
 }
 
+std::pair<PyObject *, PythonException *> PythonFunction::call(PyObject *args, PyObject *kwargs) const {
+	PyObject *result = PyObject_Call(function, args, kwargs);
+
+	if (result == nullptr) {
+		PythonException *error = new PythonException();
+		return std::make_pair(nullptr, error);
+	} else {
+		return std::make_pair(result, nullptr);
+	}
+}
+
 std::pair<PyObject *, PythonException *> PythonFunction::call(PyObject *args) const {
 	PyObject *result = PyObject_CallObject(function, args);
 
@@ -72,3 +83,4 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 }
 
 } // namespace pyudf
+

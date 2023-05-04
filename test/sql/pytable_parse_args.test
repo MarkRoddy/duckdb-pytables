@@ -22,6 +22,22 @@ SELECT columnA, columnB FROM python_table('foo', module='udfs', func='index_char
 1	o
 2 	o
 
+# Using kwargs for arguments
+query II
+SELECT columnA, columnB FROM python_table('udfs:index_chars', kwargs = {input: 'foo'}, columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+0	f
+1	o
+2 	o
+
+# Mixed kwargs and varargs
+query III
+SELECT * FROM python_table('udfs:sentence_to_columns', 'hello my friend', kwargs = {'rows': 2},
+  columns = {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'});
+----
+hello	my	friend
+hello	my	friend
+
 
 # Compact invocation, first arg str but missing semicolon
 statement error
@@ -39,7 +55,7 @@ Invalid Input Error: First argument must be string specifying 'module:func' if n
 statement error
 SELECT columnA, columnB FROM python_table('udfs:index_chars', 'foo')
 ----
-Invalid Input Error: columns requires a struct as input
+Invalid Input Error: columns requires a struct mapping column names to data types
 
 
 # Using func w/o module
@@ -56,3 +72,16 @@ SELECT columnA, columnB FROM python_table('foo', module='udfs', columns = {'colu
 Invalid Input Error: Module specified w/o a corresponding function
 
 
+# Invalid Type Checks Typed as duckdb::LogicalType::ANY
+#######################################################
+# Handle columns not being a struct as expected
+statement error
+SELECT columnA, columnB FROM python_table('foo', module='udfs', func='index_chars', columns = 12)
+----
+Invalid Input Error: columns requires a struct mapping column names to data types
+
+# Handle kwargs not being a struct as expected
+statement error
+SELECT columnA, columnB FROM python_table('udfs:index_chars', 'foo', kwargs = 'bar', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+Invalid Input Error: kwargs must be a struct mapping argument names to values

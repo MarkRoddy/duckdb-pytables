@@ -1,0 +1,125 @@
+# name: test/legacy/pytable.test
+# description: Tests for backwards compatilibity with DuckDB 0.7.1
+# group: [python_udf]
+
+
+# Require statement will ensure this test is run with this extension loaded
+require python_udf
+
+
+# Using VarArgs should fail, rather than causing a SegFault (which would happen due to a known bug)
+query III
+SELECT * FROM python_table('udfs:sentence_to_columns', 'hello my friend', 2,
+  columns = {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'});
+----
+hello	my	friend
+hello	my	friend
+
+# However everything works fine using kwargs
+query III
+SELECT * FROM python_table('udfs:sentence_to_columns', kwargs = {'sentence': 'hello my friend', 'rows': 2},
+  columns = {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'});
+----
+hello	my	friend
+hello	my	friend
+
+
+
+# Check that an invalid module is handled
+statement error
+select * FROM python_table('udfsss:table', 'Jane', columns={'columnA': 'VARCHAR'});
+----
+Invalid Error: Failed to import module: udfsss
+
+
+# Correctly handle when a function does not exist
+statement error
+select * FROM python_table('udfs:tablesssss', 'Jane', columns={'columnA': 'VARCHAR'});
+----
+Invalid Error: Failed to find function: tablesssss
+
+
+# Confirm the extension works
+query I
+SELECT * FROM python_table('udfs:table', 'Jane', columns={'columnA': 'VARCHAR'});
+----
+a
+ 
+v
+e
+r
+y
+ 
+l
+o
+n
+g
+ 
+s
+t
+r
+i
+n
+g
+
+# Confirm the extension works
+query I
+SELECT * FROM python_table('udfs:table', 'Jane', columns={'columnA': 'VARCHAR'});
+----
+a
+ 
+v
+e
+r
+y
+ 
+l
+o
+n
+g
+ 
+s
+t
+r
+i
+n
+g
+
+
+# Test mutliple columsn with diff data types
+query II
+SELECT columnA, columnB FROM python_table('udfs:index_chars', 'foo', columns={'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+0	f
+1	o
+2 	o
+
+
+# Expected behavior when a table function raises an exception
+statement error
+SELECT * FROM python_table('udfs:table_throws_exception', 'foo', columns={'columnA': 'VARCHAR'});
+----
+Invalid Error: This function raises an exception
+
+
+
+# Expected behavior when next() on the iterator causes an exception
+statement error
+SELECT * FROM python_table('udfs:iterator_throws_exception', 'foo', columns={'columnA': 'VARCHAR'});
+----
+Invalid Error: Third record raises an exception
+
+
+# Check handling when more columns are returned than expected
+statement error
+SELECT * FROM python_table('udfs:num_columns', 0 , 10, 2, columns={'columnA': 'VARCHAR'});
+----
+A row with 2 values was detected though 1 columns were expected
+
+# Check handling when less columns are returned than expected
+statement error
+SELECT * FROM python_table('udfs:num_columns', 0, 10, 1, columns={'columnA': 'VARCHAR', 'columnB': 'VARCHAR'});
+----
+A row with 1 values was detected though 2 columns were expected
+
+
