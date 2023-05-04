@@ -39,7 +39,25 @@ Note you don't *need* to write your own python functions. This extension will al
 the [Current Limitations](#current-limitations) section for details).
 
 ## Function Arguments
-Any non-named arguments will be passed as an argument to the python function specified, with the exception of when 'module' and 'func' are not specified. In which case the first non-named argumented is assumed to be a string with a value in the form of `<'module>:<func>'`.
+Any non-named arguments will be passed as an argument to the python function specified, with the exception of when 'module' and 'func' are not specified. In which case the first non-named argumented is assumed to be a string with a value in the form of `<'module>:<func>'`. This lets you choose between two calling styles:
+
+Compact:
+```sql
+SELECT *
+FROM python_table('<module>:<callable>', 'arg1', 2, 'arg3',
+  columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+```
+
+or, Explicit:
+```sql
+SELECT *
+FROM python_table(
+  'arg1', 2, 'arg3'
+  module='<module>', func='<callable>', 
+  columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+```
+
+Please see the table below for a further breakdown of each of the named arguments.
 | named argument | description |
 | -------------- | ----------- |
 | module         | Name of the module to be imported. Any valid value after an `import ...` statement in python should work. Note if specified a value for `func` must be specified as well.|
