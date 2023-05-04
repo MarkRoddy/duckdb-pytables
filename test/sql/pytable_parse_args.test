@@ -1,0 +1,58 @@
+# name: test/sql/pytable_parse_args.test
+# description: Confirm processing of function arguments
+# group: [python_udf]
+
+# Require statement will ensure this test is run with this extension loaded
+require python_udf
+
+
+# Compact invocation
+query II
+SELECT columnA, columnB FROM python_table('udfs:index_chars', 'foo', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+0	f
+1	o
+2 	o
+
+# Explicit invocation
+query II
+SELECT columnA, columnB FROM python_table('foo', module='udfs', func='index_chars', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+0	f
+1	o
+2 	o
+
+
+# Compact invocation, first arg str but missing semicolon
+statement error
+SELECT columnA, columnB FROM python_table('udfs', 'foo', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+Invalid Input Error: Function specifier lacks a ':' to delineate module and function
+
+# Compact invocation, first arg is non-str (aka missing function specification)
+statement error
+SELECT columnA, columnB FROM python_table(16, 'foo', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+Invalid Input Error: First argument must be string specifying 'module:func' if name parameters not supplied
+
+# No columns specified
+statement error
+SELECT columnA, columnB FROM python_table('udfs:index_chars', 'foo')
+----
+Invalid Input Error: columns requires a struct as input
+
+
+# Using func w/o module
+statement error
+SELECT columnA, columnB FROM python_table('foo', func='index_chars', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+Invalid Input Error: Function specified w/o a corresponding module
+
+
+# Using module w/o func
+statement error
+SELECT columnA, columnB FROM python_table('foo', module='udfs', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+Invalid Input Error: Module specified w/o a corresponding function
+
+

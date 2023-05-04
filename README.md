@@ -1,36 +1,71 @@
 A DuckDB extension for using Python based functions in SQL queries.
 
-# Table Function Example
-This extension includes a DuckDB Table Function which invokes a Python function you specify, and exposes the records it returns as a database table.
+# Table Function 
+The `python_table` table function lets you use a python function that returns row like objects as the FROM clause in
+a SQL query. This lets you trivially wire in new data sources, including external ones, which you can then query
+using SQL, join to other data sources, etc.
 
-As an example, given a python script named `udfs.py` in your path with the following function:
+## Table Function Example
+As an example, here is a Python function that uses the PyGithub library to enumerate Git Repos for a user:
 ```python
-def sentence_to_columns(sentence, rows):
-    """
-    Generates a table with a column for each word in 'sentence'. Will
-    repeat the sentence for 'row' number of records.
-    """
-    for _ in range(int(rows)):
-        yield sentence.split(" ")
+from github import Github
+
+token = os.environ["GITHUB_ACCESS_TOKEN"]
+g = Github(token)
+
+def repos_for(username):
+    for r in g.get_user(username).get_repos():
+        yield (r.name, r.description, r.language)
 ```
 
 Using the `python_table` function in a SQL query, you can call this Python function and query its output.
 ```sql
-> SELECT * FROM python_table('udfs', 'sentence_to_columns',
-   {'columnA': 'VARCHAR', 'columnB': 'VARCHAR', 'columnC': 'VARCHAR'},
-   ['hello my friend', 2]);
-┌─────────┬─────────┬─────────┐
-│ columnA │ columnB │ columnC │
-│ varchar │ varchar │ varchar │
-├─────────┼─────────┼─────────┤
-│ hello   │ my      │ friend  │
-│ hello   │ my      │ friend  │
-└─────────┴─────────┴─────────┘
+> SELECT *
+  FROM python_table('ghub:repos_for', 'markroddy',
+                    columns = {'repo': 'VARCHAR', 'description': 'VARCHAR', 'language': 'VARCHAR'})
+  WHERE repo like '%duck%';
+┌─────────────────────────────┬────────────────────────────────────────────────────────────────┬────────────┐
+│            repo             │                          description                           │  language  │
+│           varchar           │                            varchar                             │  varchar   │
+├─────────────────────────────┼────────────────────────────────────────────────────────────────┼────────────┤
+│ dbt-duckdb                  │ dbt (http://getdbt.com) adapter for DuckDB (http://duckdb.org) │ Python     │
+│ duckdb                      │ DuckDB is an in-process SQL OLAP Database Management System    │ C++        │
+│ duckdb-python-udf           │                                                                │ C++        │
+│ duckservability             │ Inspect Your Servers with DuckDB                               │ Shell      │
+└─────────────────────────────┴────────────────────────────────────────────────────────────────┴────────────┘
 ```
 
-Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party libraries (assuming they fit within the current limitations, see next section for details).
+Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party libraries (assuming they fit within the current limitations, see 
+the [Current Limitations](#current-limitations) section for details).
 
-## Use Cases
+## Function Arguments
+Any non-named arguments will be passed as an argument to the python function specified, with the exception of when 'module' and 'func' are not specified. In which case the first non-named argumented is assumed to be a string with a value in the form of `<'module>:<func>'`. This lets you choose between two calling styles:
+
+Compact:
+```sql
+SELECT *
+FROM python_table('<module>:<callable>', 'arg1', 2, 'arg3',
+  columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+```
+
+or, Explicit:
+```sql
+SELECT *
+FROM python_table(
+  'arg1', 2, 'arg3'
+  module='<module>', func='<callable>', 
+  columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+```
+
+Please see the table below for a further breakdown of each of the named arguments.
+| named argument | description |
+| -------------- | ----------- |
+| module         | Name of the module to be imported. Any valid value after an `import ...` statement in python should work. Note if specified a value for `func` must be specified as well.|
+| func           | Name of the function or callable to be executed. Must be a valid name within module. Note if specified a value for `module` must be specified as well.|
+| columns        | Required. A struct mapping column names to expected data types.|
+
+
+## Additional Examples and Use Cases
 Since anything you can do in Python can now show up in DuckDB as a table, the world is your oyster here. In particular, it's trivial to make any external resource that has a python library associated with it show up as a database table. Some things you might want to try (all of which can be found in the [examples/ directory](examples/)). Note, be sure to include the relevant file from the `examples/` directory in your Python path or these won't work.
 
 ### Query your EC2 Instances
@@ -53,7 +88,7 @@ Note these are not inherent limitations that can not be overcome, but presently 
 
 # Installation and Usage
 
-First, [install DuckDB](https://duckdb.org/docs/installation/).
+First, [install DuckDB](https://duckdb.org/docs/installation/). Note that at present, a Bleeding Edge installion is required until DuckDB 0.7.2 is released.
 
 Next, start the DuckDB shell using the 'unsigned' option. Note that depending on your choosen environment (commandline, Python, etc) the manner in which you specify this will vary. A few examples are provided in the next section below.
 

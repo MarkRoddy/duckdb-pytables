@@ -39,7 +39,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 	                   LogicalType::VARCHAR, Python_udfScalarFun));
 
 	python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
-	catalog.CreateFunction(*con.context, &python_udf_fun_info);
+	catalog.CreateFunction(*con.context, python_udf_fun_info);
 
 	// pyudf::GetPythonTableFunction();
 	auto python_table = pyudf::GetPythonTableFunction();
