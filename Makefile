@@ -62,6 +62,12 @@ test_debug: debug
 	python3 udfs.py
 	ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
 
+test_examples_debug:
+	PYTHONPATH=examples ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
+
+test_examples_release:
+	PYTHONPATH=examples ./build/release/test/unittest --test-dir . "[sql]"
+
 check-format:
 	find src/ -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -Werror --sort-includes=0 -style=file --dry-run
 
