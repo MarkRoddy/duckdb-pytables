@@ -35,7 +35,8 @@ Using the `python_table` function in a SQL query, you can call this Python funct
 └─────────────────────────────┴────────────────────────────────────────────────────────────────┴────────────┘
 ```
 
-Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party libraries (assuming they fit within the current limitations, see next section for details).
+Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party libraries (assuming they fit within the current limitations, see 
+the [Current Limitations](#current-limitations) section for details).
 
 ## Function Arguments
 Any non-named arguments will be passed as an argument to the python function specified, with the exception of when 'module' and 'func' are not specified. In which case the first non-named argumented is assumed to be a string with a value in the form of `<'module>:<func>'`.
