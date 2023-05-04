@@ -1,0 +1,25 @@
+# name: test/sql/pytable_examples.test
+# description: test provided Python functions for the python_table extension function
+# group: [python_table_examples]
+
+# Require statement will ensure this test is run with this extension loaded
+require python_udf
+
+
+# Confirm our example function for the README works as expected
+query III
+SELECT *
+FROM python_table('ghub:repos_for', 'markroddy',
+                  columns = {'repo': 'VARCHAR', 'description': 'VARCHAR', 'language': 'VARCHAR'})
+WHERE language = 'Python' AND repo = 'boto';
+----
+boto	Python interface to Amazon Web Services	Python
+
+
+# Enumerate S3 Objects
+query IIII
+SELECT *
+FROM python_table('aws:s3_objects', 'net.ednit.duckdb-extensions', 'python_udf/097089c/v0.7.1/linux_amd64/',
+     columns = { 'key': 'VARCHAR', 'last_modified': 'VARCHAR', 'size': 'INT', 'storage_class': 'VARCHAR'});
+----
+python_udf/097089c/v0.7.1/linux_amd64/python_udf.duckdb_extension.gz	03/29/2023	7356670	STANDARD
