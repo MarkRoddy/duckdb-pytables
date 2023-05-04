@@ -88,7 +88,7 @@ Note these are not inherent limitations that can not be overcome, but presently 
 
 # Installation and Usage
 
-First, [install DuckDB](https://duckdb.org/docs/installation/).
+First, [install DuckDB](https://duckdb.org/docs/installation/). Note that at present, a Bleeding Edge installion is required until DuckDB 0.7.2 is released.
 
 Next, start the DuckDB shell using the 'unsigned' option. Note that depending on your choosen environment (commandline, Python, etc) the manner in which you specify this will vary. A few examples are provided in the next section below.
 
