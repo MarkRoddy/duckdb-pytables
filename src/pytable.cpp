@@ -157,7 +157,7 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	if (names.empty()) {
 		throw BinderException("require at least a single column as input!");
 	}
-        
+
 	result->return_types = std::vector<LogicalType>(return_types);
 	PythonFunction func = PythonFunction(module_name, function_name);
 	result->arguments = duckdbs_to_pys(arguments);
@@ -165,17 +165,15 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw IOException("Failed coerce function arguments");
 	}
 
-        if (0 < params.count("kwargs")) {
-          auto input_kwargs = params["kwargs"];
-          auto ik_type = input_kwargs.type().id();
-          if (ik_type != LogicalTypeId::STRUCT) {
-            throw InvalidInputException("kwargs must be a struct mapping argument names to values");
-          }
-          result->kwargs = duckdb_to_py(input_kwargs);
-        }
+	if (0 < params.count("kwargs")) {
+		auto input_kwargs = params["kwargs"];
+		auto ik_type = input_kwargs.type().id();
+		if (ik_type != LogicalTypeId::STRUCT) {
+			throw InvalidInputException("kwargs must be a struct mapping argument names to values");
+		}
+		result->kwargs = duckdb_to_py(input_kwargs);
+	}
 
-
-        
 	// Invoke the function and grab a copy of the iterable it returns.
 	PyObject *iter;
 	PythonException *error;
@@ -213,13 +211,13 @@ unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
 	auto py_table_function =
 	    TableFunction("python_table", {}, PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
 
-        // todo: don't configure this for older versions of duckdb
+	// todo: don't configure this for older versions of duckdb
 	py_table_function.varargs = LogicalType::ANY;
-        
+
 	py_table_function.named_parameters["module"] = LogicalType::VARCHAR;
 	py_table_function.named_parameters["func"] = LogicalType::VARCHAR;
 	py_table_function.named_parameters["columns"] = LogicalType::ANY;
-        py_table_function.named_parameters["kwargs"] = LogicalType::ANY;
+	py_table_function.named_parameters["kwargs"] = LogicalType::ANY;
 
 	CreateTableFunctionInfo py_table_function_info(py_table_function);
 	return make_uniq<CreateTableFunctionInfo>(py_table_function_info);

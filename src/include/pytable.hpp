@@ -5,5 +5,5 @@
 
 namespace pyudf {
 duckdb::unique_ptr<duckdb::CreateTableFunctionInfo> GetPythonTableFunction();
-  PyObject* StructToDict(duckdb::Value value);
-}
+PyObject *StructToDict(duckdb::Value value);
+} // namespace pyudf

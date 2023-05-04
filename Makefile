@@ -78,5 +78,7 @@ check-format:
 format:
 	find src/ -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -Werror --sort-includes=0 -style=file -i
 
+fmt: format
+
 update:
 	git submodule update --remote --merge

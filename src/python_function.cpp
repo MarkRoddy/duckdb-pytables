@@ -83,4 +83,3 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 }
 
 } // namespace pyudf
-
