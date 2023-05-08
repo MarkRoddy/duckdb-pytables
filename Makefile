@@ -29,6 +29,10 @@ pull:
 	git submodule init
 	git submodule update --recursive --remote
 
+revert-submodules:
+	git submodule deinit -f .
+	git submodule update --init
+
 clean:
 	rm -rf build
 	rm -rf testext
