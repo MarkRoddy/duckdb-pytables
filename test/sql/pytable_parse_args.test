@@ -85,3 +85,26 @@ statement error
 SELECT columnA, columnB FROM python_table('udfs:index_chars', 'foo', kwargs = 'bar', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
 ----
 Invalid Input Error: kwargs must be a struct mapping argument names to values
+
+# Handle a function with no arguments
+query I
+SELECT * FROM python_table('udfs:screaming_in_the_void', columns={'columnA': 'VARCHAR'});
+----
+a
+ 
+v
+e
+r
+y
+ 
+l
+o
+n
+g
+ 
+s
+t
+r
+i
+n
+g
