@@ -43,7 +43,10 @@ namespace pyudf {
 
     
 struct PyScanBindData : public TableFunctionData {
-	std::vector<LogicalType> return_types;
+  // Function arguments coerced to a tuple used in Python calling semantics,
+  PyObject *arguments;
+
+  std::vector<LogicalType> return_types;
 
         // Return value of the function specified
 	PyObject *function_result_iterable;
@@ -234,6 +237,27 @@ PyObject *pyObjectToIterable(PyObject *py_object) {
 	return py_iter;
 }
 
+void FinalizePyTable(PyScanBindData &bind_data) {
+  // Free the iterable returned by our python function call
+  Py_DECREF(bind_data.function_result_iterable);
+  bind_data.function_result_iterable = nullptr;
+
+  // Free each entry of the arguments tuple and the tuple itself
+  Py_ssize_t size = PyTuple_Size(bind_data.arguments);
+  for (Py_ssize_t i = 0; i < size; i++) {
+    PyObject* arg = PyTuple_GetItem(bind_data.arguments, i);
+    Py_XDECREF(arg);
+  }
+  // todo: for some reason this causes a segfault?
+  // Py_XDECREF(bind_data.arguments);
+
+
+  // todo: fun fact, running this results in segfaults! That shouldn't
+  // happen so clearly this is a problem that needs to be addressed.
+  // FWIW, we shouldn't *need* to trigger a garbage collection.
+  // py_collect_garbage();
+}
+  
 void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
 	auto &bind_data = (PyScanBindData &)*data.bind_data;
 
@@ -284,11 +308,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	if (!row) {
 		// We've exhausted our iterator
 		local_state.done = true;
-		Py_DECREF(result);
-                bind_data.function_result_iterable = nullptr;
-                // todo: fun fact, running this results in segfaults! That shouldn't
-                // happen so clearly this is a problem that needs to be addressed.
-                // py_collect_garbage();
+                FinalizePyTable(bind_data);
                 return;
 	}
 }
@@ -349,15 +369,15 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	result->return_types = std::vector<LogicalType>(return_types);
 
         PythonFunction func = PythonFunction(module_name, function_name);
-	auto pyarguments = duckdb_to_py(arguments);
-	if (NULL == pyarguments) {
+	result->arguments = duckdb_to_py(arguments);
+	if (NULL == result->arguments) {
 		throw IOException("Failed coerce function arguments");
 	}
 
 	// Invoke the function and grab a copy of the iterable it returns.
 	PyObject *iter;
 	PythonException *error;
-	std::tie(iter, error) = func.call(pyarguments);
+	std::tie(iter, error) = func.call(result->arguments);
 	if (!iter) {
 		Py_XDECREF(iter);
 		std::string err = error->message;
@@ -368,15 +388,6 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw std::runtime_error("Error: function '" + func.function_name() +
 		                         "' did not return an iterator\n");
 	}
-
-        // Free each entry of the arguments tuple and the tuple itself
-        Py_ssize_t size = PyTuple_Size(pyarguments);
-        for (Py_ssize_t i = 0; i < size; i++) {
-          PyObject* arg = PyTuple_GetItem(pyarguments, i);
-          // Py_XDECREF(arg);
-        }
-        // Py_XDECREF(pyarguments);
-
 	result->function_result_iterable = iter;
 	return std::move(result);
 }
