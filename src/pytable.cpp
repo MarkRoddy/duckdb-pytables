@@ -12,43 +12,36 @@ using namespace duckdb;
 
 namespace pyudf {
 
+void py_collect_garbage() {
+	PyObject *gc_module = PyImport_ImportModule("gc");
+	PyObject *gc_dict = PyModule_GetDict(gc_module);
+	PyObject *gc_enable = PyDict_GetItemString(gc_dict, "enable");
+	PyObject *gc_result = PyObject_CallObject(gc_enable, nullptr);
 
-  void py_collect_garbage() {
-    PyObject *gc_module = PyImport_ImportModule("gc");
-    PyObject *gc_dict = PyModule_GetDict(gc_module);
-    PyObject *gc_enable = PyDict_GetItemString(gc_dict, "enable");
-    PyObject *gc_result = PyObject_CallObject(gc_enable, nullptr);
+	// collect garbage
+	PyObject *gc_collect = PyDict_GetItemString(gc_dict, "collect");
+	gc_result = PyObject_CallObject(gc_collect, nullptr);
 
-    // collect garbage
-    PyObject *gc_collect = PyDict_GetItemString(gc_dict, "collect");
-    gc_result = PyObject_CallObject(gc_collect, nullptr);
+	// disable garbage collection
+	PyObject *gc_disable = PyDict_GetItemString(gc_dict, "disable");
+	gc_result = PyObject_CallObject(gc_disable, nullptr);
 
-    // disable garbage collection
-    PyObject *gc_disable = PyDict_GetItemString(gc_dict, "disable");
-    gc_result = PyObject_CallObject(gc_disable, nullptr);
+	// release objects that are no longer needed
+	Py_XDECREF(gc_result);
+	Py_XDECREF(gc_collect);
+	Py_XDECREF(gc_disable);
+	Py_XDECREF(gc_enable);
+	Py_XDECREF(gc_dict);
+	Py_XDECREF(gc_module);
+}
 
-    // release objects that are no longer needed
-    Py_XDECREF(gc_result);
-    Py_XDECREF(gc_collect);
-    Py_XDECREF(gc_disable);
-    Py_XDECREF(gc_enable);
-    Py_XDECREF(gc_dict);
-    Py_XDECREF(gc_module);
-  }
-  
-
-
-
-
-
-    
 struct PyScanBindData : public TableFunctionData {
-  // Function arguments coerced to a tuple used in Python calling semantics,
-  PyObject *arguments;
+	// Function arguments coerced to a tuple used in Python calling semantics,
+	PyObject *arguments;
 
-  std::vector<LogicalType> return_types;
+	std::vector<LogicalType> return_types;
 
-        // Return value of the function specified
+	// Return value of the function specified
 	PyObject *function_result_iterable;
 };
 
@@ -72,21 +65,22 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 	}
 }
 
-void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types, std::vector<duckdb::Value>& result) {
+void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types,
+                                    std::vector<duckdb::Value> &result) {
 
 	if (!PyIter_Check(py_iterator)) {
-          throw InvalidInputException("First argument must be an iterator");
+		throw InvalidInputException("First argument must be an iterator");
 	}
 
 	PyObject *py_item;
 	size_t index = 0;
-        std::string error_message;
+	std::string error_message;
 	while ((py_item = PyIter_Next(py_iterator))) {
 		if (index >= logical_types.size()) {
 			Py_DECREF(py_item);
 			error_message = "A row with " + std::to_string(index + 1) + " values was detected though " +
 			                std::to_string(logical_types.size()) + " columns were expected",
-                          throw InvalidInputException(error_message);
+			throw InvalidInputException(error_message);
 		}
 
 		duckdb::Value value;
@@ -154,13 +148,13 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 		// todo: use our Python exception wrapper
 		error_message = "Python runtime error occurred during iteration";
 		PyErr_Clear();
-                throw std::runtime_error(error_message);
+		throw std::runtime_error(error_message);
 	}
 
 	if (index != logical_types.size()) {
 		error_message = "A row with " + std::to_string(index) + " values was detected though " +
 		                std::to_string(logical_types.size()) + " columns were expected";
-                throw InvalidInputException(error_message);
+		throw InvalidInputException(error_message);
 	}
 }
 
@@ -238,26 +232,25 @@ PyObject *pyObjectToIterable(PyObject *py_object) {
 }
 
 void FinalizePyTable(PyScanBindData &bind_data) {
-  // Free the iterable returned by our python function call
-  Py_DECREF(bind_data.function_result_iterable);
-  bind_data.function_result_iterable = nullptr;
+	// Free the iterable returned by our python function call
+	Py_DECREF(bind_data.function_result_iterable);
+	bind_data.function_result_iterable = nullptr;
 
-  // Free each entry of the arguments tuple and the tuple itself
-  Py_ssize_t size = PyTuple_Size(bind_data.arguments);
-  for (Py_ssize_t i = 0; i < size; i++) {
-    PyObject* arg = PyTuple_GetItem(bind_data.arguments, i);
-    Py_XDECREF(arg);
-  }
-  // todo: for some reason this causes a segfault?
-  // Py_XDECREF(bind_data.arguments);
+	// Free each entry of the arguments tuple and the tuple itself
+	Py_ssize_t size = PyTuple_Size(bind_data.arguments);
+	for (Py_ssize_t i = 0; i < size; i++) {
+		PyObject *arg = PyTuple_GetItem(bind_data.arguments, i);
+		Py_XDECREF(arg);
+	}
+	// todo: for some reason this causes a segfault?
+	// Py_XDECREF(bind_data.arguments);
 
-
-  // todo: fun fact, running this results in segfaults! That shouldn't
-  // happen so clearly this is a problem that needs to be addressed.
-  // FWIW, we shouldn't *need* to trigger a garbage collection.
-  // py_collect_garbage();
+	// todo: fun fact, running this results in segfaults! That shouldn't
+	// happen so clearly this is a problem that needs to be addressed.
+	// FWIW, we shouldn't *need* to trigger a garbage collection.
+	// py_collect_garbage();
 }
-  
+
 void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
 	auto &bind_data = (PyScanBindData &)*data.bind_data;
 
@@ -265,13 +258,13 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 
 	if (local_state.done) {
 		return;
-        }
+	}
 
 	PyObject *result = bind_data.function_result_iterable;
-        if (nullptr == result) {
-          throw std::runtime_error("Where did our iterator go?");
-        }
-        
+	if (nullptr == result) {
+		throw std::runtime_error("Where did our iterator go?");
+	}
+
 	PyObject *row;
 	int read_records = 0;
 	while ((read_records < STANDARD_VECTOR_SIZE) && (row = PyIter_Next(result))) {
@@ -280,13 +273,13 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 			// todo: cleanup?
 			throw std::runtime_error("Error: Row record not iterable as expected");
 		} else {
-                        std::vector<duckdb::Value> duck_row = {};
-                        ConvertPyObjectsToDuckDBValues(iter_row, bind_data.return_types, duck_row);
-                        for (long unsigned int i = 0; i < duck_row.size(); i++) {
-                          auto v = duck_row.at(i);
-                          // todo: Am I doing this correctly? I have no idea.
-                          output.SetValue(i, output.size(), v);
-                        }
+			std::vector<duckdb::Value> duck_row = {};
+			ConvertPyObjectsToDuckDBValues(iter_row, bind_data.return_types, duck_row);
+			for (long unsigned int i = 0; i < duck_row.size(); i++) {
+				auto v = duck_row.at(i);
+				// todo: Am I doing this correctly? I have no idea.
+				output.SetValue(i, output.size(), v);
+			}
 			Py_DECREF(row);
 			output.SetCardinality(output.size() + 1);
 			read_records++;
@@ -300,16 +293,16 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 		PythonException error = PythonException();
 		std::string err = error.message;
 		Py_DECREF(result);
-                bind_data.function_result_iterable = nullptr;
-                // Is this necessary? I would guess not?
-                local_state.done = true;
+		bind_data.function_result_iterable = nullptr;
+		// Is this necessary? I would guess not?
+		local_state.done = true;
 		throw std::runtime_error(err);
 	}
 	if (!row) {
 		// We've exhausted our iterator
 		local_state.done = true;
-                FinalizePyTable(bind_data);
-                return;
+		FinalizePyTable(bind_data);
+		return;
 	}
 }
 
@@ -368,7 +361,7 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 
 	result->return_types = std::vector<LogicalType>(return_types);
 
-        PythonFunction func = PythonFunction(module_name, function_name);
+	PythonFunction func = PythonFunction(module_name, function_name);
 	result->arguments = duckdb_to_py(arguments);
 	if (NULL == result->arguments) {
 		throw IOException("Failed coerce function arguments");
@@ -385,8 +378,7 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw std::runtime_error(err);
 	} else if (!PyIter_Check(iter)) {
 		Py_XDECREF(iter);
-		throw std::runtime_error("Error: function '" + func.function_name() +
-		                         "' did not return an iterator\n");
+		throw std::runtime_error("Error: function '" + func.function_name() + "' did not return an iterator\n");
 	}
 	result->function_result_iterable = iter;
 	return std::move(result);
