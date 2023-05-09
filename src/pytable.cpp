@@ -10,12 +10,18 @@
 
 using namespace duckdb;
 
+
+#ifndef DEBUG
+#define DEBUG false
+#endif
+
 namespace pyudf {
 
 
   void py_collect_garbage() {
     // enable garbage collection
     if (DEBUG) {
+      std::cerr << "Performing Garbage Colleciton Run" << std::endl;
     PyObject *gc_module = PyImport_ImportModule("gc");
     PyObject *gc_dict = PyModule_GetDict(gc_module);
     PyObject *gc_enable = PyDict_GetItemString(gc_dict, "enable");
@@ -36,6 +42,7 @@ namespace pyudf {
     Py_XDECREF(gc_enable);
     Py_XDECREF(gc_dict);
     Py_XDECREF(gc_module);
+    std::cerr << "Garbage Colleciton Complete" << std::endl;
     }
   }
   
@@ -46,14 +53,9 @@ namespace pyudf {
 
     
 struct PyScanBindData : public TableFunctionData {
-	unique_ptr<PythonFunction> function;
-
-	// Function arguments coerced to a tuple used in Python calling semantics,
-	// todo: free after function execution is complete
-	PyObject *arguments;
 	std::vector<LogicalType> return_types;
 
-	// todo: free after consumed + rename to something better, py_row_iterator?
+        // Return value of the function specified
 	PyObject *function_result_iterable;
 };
 
@@ -309,7 +311,7 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 		// Py_DECREF(bind_data.function_result_iterable);
                 bind_data.function_result_iterable = nullptr;
                 std::cerr << "Decref'd iterable, and now collecting garbage" << std::endl;
-                py_collect_garbage();
+                // py_collect_garbage();
                 return;
 	}
         std::cerr << "Row is not null. We hit max rows w/o exhausting our iterator" << std::endl;
@@ -369,18 +371,22 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	}
 
 	result->return_types = std::vector<LogicalType>(return_types);
-        PythonFunction func = PythonFunction(module_name, function_name);
-        result->function = make_uniq<PythonFunction>(func);
 
-	result->arguments = duckdb_to_py(arguments);
-	if (NULL == result->arguments) {
+        std::cerr << "Binding Function: " + module_name + ":" + function_name << std::endl;
+        PythonFunction func = PythonFunction(module_name, function_name);
+
+        std::cerr << "Converting function arguments" << std::endl;
+	auto pyarguments = duckdb_to_py(arguments);
+	if (NULL == pyarguments) {
 		throw IOException("Failed coerce function arguments");
 	}
 
 	// Invoke the function and grab a copy of the iterable it returns.
 	PyObject *iter;
 	PythonException *error;
-	std::tie(iter, error) = result->function->call(result->arguments);
+        std::cerr << "Invoking function" << std::endl;
+	std::tie(iter, error) = func.call(pyarguments);
+        std::cerr << "Function invoked" << std::endl;
 	if (!iter) {
 		Py_XDECREF(iter);
 		std::string err = error->message;
@@ -388,9 +394,21 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw std::runtime_error(err);
 	} else if (!PyIter_Check(iter)) {
 		Py_XDECREF(iter);
-		throw std::runtime_error("Error: function '" + result->function->function_name() +
+		throw std::runtime_error("Error: function '" + func.function_name() +
 		                         "' did not return an iterator\n");
 	}
+
+        // Free each entry of the arguments tuple and the tuple itself
+        std::cerr << "Freeing arguments" << std::endl;
+        Py_ssize_t size = PyTuple_Size(pyarguments);
+        for (Py_ssize_t i = 0; i < size; i++) {
+          PyObject* arg = PyTuple_GetItem(pyarguments, i);
+          // Py_XDECREF(arg);
+        }
+        std::cerr << "Freeing the argument tuple" << std::endl;
+        // Py_XDECREF(pyarguments);
+
+        std::cerr << "Saving result iterable" << std::endl;
 	result->function_result_iterable = iter;
 	return std::move(result);
 }
