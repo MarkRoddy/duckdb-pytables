@@ -77,8 +77,7 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 	}
 }
 
-std::vector<duckdb::Value>* ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types) {
-  std::vector<duckdb::Value>* result = new std::vector<duckdb::Value>();
+void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types, std::vector<duckdb::Value>& result) {
 
 	if (!PyIter_Check(py_iterator)) {
           throw InvalidInputException("First argument must be an iterator");
@@ -151,7 +150,7 @@ std::vector<duckdb::Value>* ConvertPyObjectsToDuckDBValues(PyObject *py_iterator
 			value = duckdb::Value((std::nullptr_t)NULL);
 		}
 
-		result->push_back(value);
+		result.push_back(value);
 		Py_DECREF(py_item);
 		index++;
 	}
@@ -168,8 +167,6 @@ std::vector<duckdb::Value>* ConvertPyObjectsToDuckDBValues(PyObject *py_iterator
 		                std::to_string(logical_types.size()) + " columns were expected";
                 throw InvalidInputException(error_message);
 	}
-
-	return result;
 }
 
 PyObject *duckdb_to_py(std::vector<Value> &values) {
@@ -276,14 +273,14 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 			// todo: cleanup?
 			throw std::runtime_error("Error: Row record not iterable as expected");
 		} else {
-			auto duck_row = ConvertPyObjectsToDuckDBValues(iter_row, bind_data.return_types);
-                        for (long unsigned int i = 0; i < duck_row->size(); i++) {
-                          auto v = duck_row->at(i);
+                        std::vector<duckdb::Value> duck_row = {};
+                        ConvertPyObjectsToDuckDBValues(iter_row, bind_data.return_types, duck_row);
+                        for (long unsigned int i = 0; i < duck_row.size(); i++) {
+                          auto v = duck_row.at(i);
                           // todo: Am I doing this correctly? I have no idea.
                           output.SetValue(i, output.size(), v);
                         }
 			Py_DECREF(row);
-                        delete duck_row;
 			output.SetCardinality(output.size() + 1);
 			read_records++;
 		}
