@@ -46,7 +46,7 @@ namespace pyudf {
 
     
 struct PyScanBindData : public TableFunctionData {
-	PythonFunction *function;
+	unique_ptr<PythonFunction> function;
 
 	// Function arguments coerced to a tuple used in Python calling semantics,
 	// todo: free after function execution is complete
@@ -372,7 +372,9 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	}
 
 	result->return_types = std::vector<LogicalType>(return_types);
-	result->function = new PythonFunction(module_name, function_name);
+        PythonFunction func = PythonFunction(module_name, function_name);
+        result->function = make_uniq<PythonFunction>(func);
+
 	result->arguments = duckdb_to_py(arguments);
 	if (NULL == result->arguments) {
 		throw IOException("Failed coerce function arguments");
