@@ -77,26 +77,22 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 	}
 }
 
-std::pair<std::vector<duckdb::Value> *, std::string>
-ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types) {
-	std::vector<duckdb::Value> *result = new std::vector<duckdb::Value>();
-	std::string error_message;
+std::vector<duckdb::Value>* ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types) {
+  std::vector<duckdb::Value>* result = new std::vector<duckdb::Value>();
 
 	if (!PyIter_Check(py_iterator)) {
-		error_message = "First argument must be an iterator";
-		return {nullptr, error_message};
+          throw InvalidInputException("First argument must be an iterator");
 	}
 
 	PyObject *py_item;
 	size_t index = 0;
-
+        std::string error_message;
 	while ((py_item = PyIter_Next(py_iterator))) {
 		if (index >= logical_types.size()) {
 			Py_DECREF(py_item);
 			error_message = "A row with " + std::to_string(index + 1) + " values was detected though " +
 			                std::to_string(logical_types.size()) + " columns were expected",
-			delete result;
-			return {nullptr, error_message};
+                          throw InvalidInputException(error_message);
 		}
 
 		duckdb::Value value;
@@ -164,18 +160,16 @@ ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::Logica
 		// todo: use our Python exception wrapper
 		error_message = "Python runtime error occurred during iteration";
 		PyErr_Clear();
-		delete result;
-		return {nullptr, error_message};
+                throw std::runtime_error(error_message);
 	}
 
 	if (index != logical_types.size()) {
 		error_message = "A row with " + std::to_string(index) + " values was detected though " +
 		                std::to_string(logical_types.size()) + " columns were expected";
-		delete result;
-		return {nullptr, error_message};
+                throw InvalidInputException(error_message);
 	}
 
-	return {result, error_message};
+	return result;
 }
 
 PyObject *duckdb_to_py(std::vector<Value> &values) {
@@ -282,20 +276,14 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 			// todo: cleanup?
 			throw std::runtime_error("Error: Row record not iterable as expected");
 		} else {
-			std::string errmsg;
-			std::vector<duckdb::Value> *duck_row;
-			std::tie(duck_row, errmsg) = ConvertPyObjectsToDuckDBValues(iter_row, bind_data.return_types);
-			if (!duck_row) {
-				// todo: cleanup
-				throw std::runtime_error(errmsg);
-			} else {
-				for (long unsigned int i = 0; i < duck_row->size(); i++) {
-					auto v = duck_row->at(i);
-					// todo: Am I doing this correctly? I have no idea.
-					output.SetValue(i, output.size(), v);
-				}
-			}
+			auto duck_row = ConvertPyObjectsToDuckDBValues(iter_row, bind_data.return_types);
+                        for (long unsigned int i = 0; i < duck_row->size(); i++) {
+                          auto v = duck_row->at(i);
+                          // todo: Am I doing this correctly? I have no idea.
+                          output.SetValue(i, output.size(), v);
+                        }
 			Py_DECREF(row);
+                        delete duck_row;
 			output.SetCardinality(output.size() + 1);
 			read_records++;
 		}
