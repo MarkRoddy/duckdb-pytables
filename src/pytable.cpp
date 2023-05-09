@@ -14,8 +14,6 @@ namespace pyudf {
 
 
   void py_collect_garbage() {
-    // enable garbage collection
-    if (DEBUG) {
     PyObject *gc_module = PyImport_ImportModule("gc");
     PyObject *gc_dict = PyModule_GetDict(gc_module);
     PyObject *gc_enable = PyDict_GetItemString(gc_dict, "enable");
@@ -36,7 +34,6 @@ namespace pyudf {
     Py_XDECREF(gc_enable);
     Py_XDECREF(gc_dict);
     Py_XDECREF(gc_module);
-    }
   }
   
 
