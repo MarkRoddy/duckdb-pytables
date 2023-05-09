@@ -293,10 +293,8 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	// so at this point we need to check which of these is the case.
 	if (PyErr_Occurred()) {
           std::cerr << "Error occurred getting our next value" << std::endl;
-		PythonException *error;
-		error = new PythonException();
-		std::string err = error->message;
-		error->~PythonException();
+		PythonException error = PythonException();
+		std::string err = error.message;
 		Py_DECREF(result);
                 bind_data.function_result_iterable = nullptr;
                 // Is this necessary? I would guess not?
