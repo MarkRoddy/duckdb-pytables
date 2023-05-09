@@ -12,6 +12,39 @@ using namespace duckdb;
 
 namespace pyudf {
 
+
+  void py_collect_garbage() {
+    // enable garbage collection
+    if (DEBUG) {
+    PyObject *gc_module = PyImport_ImportModule("gc");
+    PyObject *gc_dict = PyModule_GetDict(gc_module);
+    PyObject *gc_enable = PyDict_GetItemString(gc_dict, "enable");
+    PyObject *gc_result = PyObject_CallObject(gc_enable, nullptr);
+
+    // collect garbage
+    PyObject *gc_collect = PyDict_GetItemString(gc_dict, "collect");
+    gc_result = PyObject_CallObject(gc_collect, nullptr);
+
+    // disable garbage collection
+    PyObject *gc_disable = PyDict_GetItemString(gc_dict, "disable");
+    gc_result = PyObject_CallObject(gc_disable, nullptr);
+
+    // release objects that are no longer needed
+    Py_XDECREF(gc_result);
+    Py_XDECREF(gc_collect);
+    Py_XDECREF(gc_disable);
+    Py_XDECREF(gc_enable);
+    Py_XDECREF(gc_dict);
+    Py_XDECREF(gc_module);
+    }
+  }
+  
+
+
+
+
+
+    
 struct PyScanBindData : public TableFunctionData {
 	PythonFunction *function;
 
@@ -219,18 +252,31 @@ PyObject *pyObjectToIterable(PyObject *py_object) {
 }
 
 void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
-	auto bind_data = data.bind_data->Cast<PyScanBindData>();
-	auto local_state = data.local_state->Cast<PyScanLocalState>();
+  std::cerr << "Starting Scan..." << std::endl;
+	auto &bind_data = (PyScanBindData &)*data.bind_data;
+
+	auto &local_state = (PyScanLocalState &)*data.local_state;
 
 	if (local_state.done) {
+          std::cerr << "Scan marked complete, exitting" << std::endl;
 		return;
-	}
+	} else {
+          std::cerr << "Scan NOT marked complete" << std::endl;
+        }
 
 	PyObject *result = bind_data.function_result_iterable;
-
+        if (nullptr == result) {
+          std::cerr << "Iterable is null, throwing error" << std::endl;
+          throw std::runtime_error("Where did our iterator go?");
+        } else {
+          std::cerr << "Iterable evaluated as non-null" << std::endl;
+        }
+        
 	PyObject *row;
 	int read_records = 0;
 	while ((read_records < STANDARD_VECTOR_SIZE) && (row = PyIter_Next(result))) {
+          std::cerr << "Processing next value from iterable" << std::endl;
+          
 		auto iter_row = pyObjectToIterable(row);
 		if (!iter_row) {
 			// todo: cleanup?
@@ -259,18 +305,29 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	// exception has occurred during resumption of the underlying function,
 	// so at this point we need to check which of these is the case.
 	if (PyErr_Occurred()) {
+          std::cerr << "Error occurred getting our next value" << std::endl;
 		PythonException *error;
 		error = new PythonException();
 		std::string err = error->message;
 		error->~PythonException();
 		Py_DECREF(result);
+                bind_data.function_result_iterable = nullptr;
+                // Is this necessary? I would guess not?
+                local_state.done = true;
 		throw std::runtime_error(err);
 	}
 	if (!row) {
+          std::cerr << "Row is null, iterable is exhausted" << std::endl;
 		// We've exhausted our iterator
 		local_state.done = true;
 		Py_DECREF(result);
+		// Py_DECREF(bind_data.function_result_iterable);
+                bind_data.function_result_iterable = nullptr;
+                std::cerr << "Decref'd iterable, and now collecting garbage" << std::endl;
+                py_collect_garbage();
+                return;
 	}
+        std::cerr << "Row is not null. We hit max rows w/o exhausting our iterator" << std::endl;
 }
 
 unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
