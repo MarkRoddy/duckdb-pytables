@@ -21,7 +21,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 	auto &catalog = Catalog::GetSystemCatalog(*con.context);
 	auto &context = *con.context;
 
-        auto python_scalar = pyudf::GetPythonScalarFunction();
+	auto python_scalar = pyudf::GetPythonScalarFunction();
 	// python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
 	catalog.CreateFunction(*con.context, python_scalar);
 

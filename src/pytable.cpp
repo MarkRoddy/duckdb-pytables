@@ -11,7 +11,6 @@
 
 #include <typeinfo>
 
-
 using namespace duckdb;
 namespace pyudf {
 
