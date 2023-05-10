@@ -267,8 +267,8 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 		// Shouldn't be necessary, but mark our scan as complete for good measure.
 		local_state.done = true;
 
-                // Clean everything up
-                FinalizePyTable(bind_data);
+		// Clean everything up
+		FinalizePyTable(bind_data);
 		throw std::runtime_error(error.message);
 	}
 	if (!row) {
