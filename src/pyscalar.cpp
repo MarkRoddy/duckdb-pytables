@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 #include "python_function.hpp"
-#include "duckdb_to_py.hpp"
+#include "pyconvert.hpp"
 
 
 using namespace duckdb;

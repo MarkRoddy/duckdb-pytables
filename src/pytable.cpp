@@ -7,7 +7,7 @@
 #include <duckdb/parser/expression/function_expression.hpp>
 #include <pytable.hpp>
 #include "python_function.hpp"
-#include <duckdb_to_py.hpp>
+#include <pyconvert.hpp>
 
 #include <typeinfo>
 
@@ -43,78 +43,6 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 		auto function = specifier.substr(delim_location + 1, (specifier.length() - delim_location));
 		return {module, function};
 	}
-}
-
-
-
-  void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types,
-                                    std::vector<duckdb::Value> &result) {
-
-	if (!PyIter_Check(py_iterator)) {
-		throw InvalidInputException("First argument must be an iterator");
-	}
-
-	PyObject *py_item;
-	size_t index = 0;
-	std::string error_message;
-	while ((py_item = PyIter_Next(py_iterator))) {
-		if (index >= logical_types.size()) {
-			Py_DECREF(py_item);
-			error_message = "A row with " + std::to_string(index + 1) + " values was detected though " +
-			                std::to_string(logical_types.size()) + " columns were expected",
-			throw InvalidInputException(error_message);
-		}
-		duckdb::LogicalType logical_type = logical_types[index];
-
-                duckdb::Value value = ConvertPyObjectToDuckDBValue(py_item, logical_type);
-		result.push_back(value);
-		Py_DECREF(py_item);
-		index++;
-	}
-
-	if (PyErr_Occurred()) {
-		// todo: use our Python exception wrapper
-		error_message = "Python runtime error occurred during iteration";
-		PyErr_Clear();
-		throw std::runtime_error(error_message);
-	}
-
-	if (index != logical_types.size()) {
-		error_message = "A row with " + std::to_string(index) + " values was detected though " +
-		                std::to_string(logical_types.size()) + " columns were expected";
-		throw InvalidInputException(error_message);
-	}
-}
-
-PyObject *pyObjectToIterable(PyObject *py_object) {
-	PyObject *collections_module = PyImport_ImportModule("collections");
-	if (!collections_module) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to import collections module");
-		return nullptr;
-	}
-
-	PyObject *iterable_class = PyObject_GetAttrString(collections_module, "Iterable");
-	if (!iterable_class) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to get Iterable class from collections module");
-		Py_DECREF(collections_module);
-		return nullptr;
-	}
-
-	int is_iterable = PyObject_IsInstance(py_object, iterable_class);
-	Py_DECREF(iterable_class);
-	Py_DECREF(collections_module);
-
-	if (!is_iterable) {
-		PyErr_SetString(PyExc_TypeError, "Input must be an iterable or an object that can be iterated upon");
-		return nullptr;
-	}
-
-	PyObject *py_iter = PyObject_GetIter(py_object);
-	if (!py_iter) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to get iterator from the input object");
-	}
-
-	return py_iter;
 }
 
 void FinalizePyTable(PyScanBindData &bind_data) {
