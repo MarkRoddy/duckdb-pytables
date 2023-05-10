@@ -263,12 +263,13 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	// so at this point we need to check which of these is the case.
 	if (PyErr_Occurred()) {
 		PythonException error = PythonException();
-		std::string err = error.message;
-		Py_DECREF(result);
-		bind_data.function_result_iterable = nullptr;
-		// Is this necessary? I would guess not?
+
+		// Shouldn't be necessary, but mark our scan as complete for good measure.
 		local_state.done = true;
-		throw std::runtime_error(err);
+
+                // Clean everything up
+                FinalizePyTable(bind_data);
+		throw std::runtime_error(error.message);
 	}
 	if (!row) {
 		// We've exhausted our iterator
