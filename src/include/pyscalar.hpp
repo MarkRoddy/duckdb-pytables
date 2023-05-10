@@ -1,8 +1,7 @@
 
 #include "duckdb.hpp"
+#include "duckdb/parser/parsed_data/create_scalar_function_info.hpp"
 
 namespace pyudf {
-std::string executePythonFunction(const std::string &module_name, const std::string &function_name,
-                                  const std::string &argument);
-
+duckdb::CreateScalarFunctionInfo GetPythonScalarFunction();
 }

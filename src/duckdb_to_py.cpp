@@ -2,16 +2,9 @@
 #include <duckdb_to_py.hpp>
 #include <duckdb.hpp>
 #include <Python.h>
+#include <iostream>
 
 namespace pyudf {
-  void Py_DecRefTuple(PyObject* tpl) {
-  for (Py_ssize_t i = 0; i < PyTuple_Size(tpl); i++) {
-    PyObject *item = PyTuple_GetItem(tpl, i);
-    Py_DECREF(item);
-  }
-
-  Py_DECREF(tpl);
-  }
   
   PyObject *duckdb_to_py(std::vector<duckdb::Value> &values) {
 	PyObject *py_tuple = PyTuple_New(values.size());
@@ -45,6 +38,7 @@ namespace pyudf {
 			py_value = PyUnicode_FromString(values[i].GetValue<std::string>().c_str());
 			break;
 		default:
+                  std::cerr << "Unhandled Logical Type: " + values[i].type().ToString() << std::endl;
 			Py_INCREF(Py_None);
 			py_value = Py_None;
 		}
@@ -53,5 +47,63 @@ namespace pyudf {
 	}
 
 	return py_tuple;
+}
+
+duckdb::Value ConvertPyObjectToDuckDBValue(PyObject *py_item, duckdb::LogicalType logical_type) {
+  duckdb::Value value;
+  PyObject *py_value;
+		bool conversion_failed = false;
+
+		switch (logical_type.id()) {
+		case duckdb::LogicalTypeId::BOOLEAN:
+			if (!PyBool_Check(py_item)) {
+				conversion_failed = true;
+			} else {
+				value = duckdb::Value(Py_True == py_item);
+			}
+			break;
+		case duckdb::LogicalTypeId::TINYINT:
+		case duckdb::LogicalTypeId::SMALLINT:
+		case duckdb::LogicalTypeId::INTEGER:
+			if (!PyLong_Check(py_item)) {
+				conversion_failed = true;
+			} else {
+				value = duckdb::Value((int32_t)PyLong_AsLong(py_item));
+			}
+			break;
+		// case duckdb::LogicalTypeId::BIGINT:
+		//   if (!PyLong_Check(py_item)) {
+		//     conversion_failed = true;
+		//   } else {
+		//     value = duckdb::Value(PyLong_AsLongLong(py_item));
+		//   }
+		//   break;
+		case duckdb::LogicalTypeId::FLOAT:
+		case duckdb::LogicalTypeId::DOUBLE:
+			if (!PyFloat_Check(py_item)) {
+				conversion_failed = true;
+			} else {
+				value = duckdb::Value(PyFloat_AsDouble(py_item));
+			}
+			break;
+		case duckdb::LogicalTypeId::VARCHAR:
+			if (!PyUnicode_Check(py_item)) {
+				conversion_failed = true;
+			} else {
+				py_value = PyUnicode_AsUTF8String(py_item);
+				value = duckdb::Value(PyBytes_AsString(py_value));
+				Py_DECREF(py_value);
+			}
+			break;
+			// Add more cases for other LogicalTypes here
+		default:
+			conversion_failed = true;
+		}
+
+		if (conversion_failed) {
+			// DUCKDB_API Value(std::nullptr_t val); // NOLINT: Allow implicit conversion from `nullptr_t`
+			value = duckdb::Value((std::nullptr_t)NULL);
+		}
+                return value;
 }
 }

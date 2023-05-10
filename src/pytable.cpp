@@ -45,7 +45,9 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 	}
 }
 
-void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types,
+
+
+  void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types,
                                     std::vector<duckdb::Value> &result) {
 
 	if (!PyIter_Check(py_iterator)) {
@@ -62,63 +64,9 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 			                std::to_string(logical_types.size()) + " columns were expected",
 			throw InvalidInputException(error_message);
 		}
-
-		duckdb::Value value;
-		PyObject *py_value;
 		duckdb::LogicalType logical_type = logical_types[index];
-		bool conversion_failed = false;
 
-		switch (logical_type.id()) {
-		case duckdb::LogicalTypeId::BOOLEAN:
-			if (!PyBool_Check(py_item)) {
-				conversion_failed = true;
-			} else {
-				value = duckdb::Value(Py_True == py_item);
-			}
-			break;
-		case duckdb::LogicalTypeId::TINYINT:
-		case duckdb::LogicalTypeId::SMALLINT:
-		case duckdb::LogicalTypeId::INTEGER:
-			if (!PyLong_Check(py_item)) {
-				conversion_failed = true;
-			} else {
-				value = duckdb::Value((int32_t)PyLong_AsLong(py_item));
-			}
-			break;
-		// case duckdb::LogicalTypeId::BIGINT:
-		//   if (!PyLong_Check(py_item)) {
-		//     conversion_failed = true;
-		//   } else {
-		//     value = duckdb::Value(PyLong_AsLongLong(py_item));
-		//   }
-		//   break;
-		case duckdb::LogicalTypeId::FLOAT:
-		case duckdb::LogicalTypeId::DOUBLE:
-			if (!PyFloat_Check(py_item)) {
-				conversion_failed = true;
-			} else {
-				value = duckdb::Value(PyFloat_AsDouble(py_item));
-			}
-			break;
-		case duckdb::LogicalTypeId::VARCHAR:
-			if (!PyUnicode_Check(py_item)) {
-				conversion_failed = true;
-			} else {
-				py_value = PyUnicode_AsUTF8String(py_item);
-				value = duckdb::Value(PyBytes_AsString(py_value));
-				Py_DECREF(py_value);
-			}
-			break;
-			// Add more cases for other LogicalTypes here
-		default:
-			conversion_failed = true;
-		}
-
-		if (conversion_failed) {
-			// DUCKDB_API Value(std::nullptr_t val); // NOLINT: Allow implicit conversion from `nullptr_t`
-			value = duckdb::Value((std::nullptr_t)NULL);
-		}
-
+                duckdb::Value value = ConvertPyObjectToDuckDBValue(py_item, logical_type);
 		result.push_back(value);
 		Py_DECREF(py_item);
 		index++;
