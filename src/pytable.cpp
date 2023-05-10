@@ -12,29 +12,6 @@ using namespace duckdb;
 
 namespace pyudf {
 
-void py_collect_garbage() {
-	PyObject *gc_module = PyImport_ImportModule("gc");
-	PyObject *gc_dict = PyModule_GetDict(gc_module);
-	PyObject *gc_enable = PyDict_GetItemString(gc_dict, "enable");
-	PyObject *gc_result = PyObject_CallObject(gc_enable, nullptr);
-
-	// collect garbage
-	PyObject *gc_collect = PyDict_GetItemString(gc_dict, "collect");
-	gc_result = PyObject_CallObject(gc_collect, nullptr);
-
-	// disable garbage collection
-	PyObject *gc_disable = PyDict_GetItemString(gc_dict, "disable");
-	gc_result = PyObject_CallObject(gc_disable, nullptr);
-
-	// release objects that are no longer needed
-	Py_XDECREF(gc_result);
-	Py_XDECREF(gc_collect);
-	Py_XDECREF(gc_disable);
-	Py_XDECREF(gc_enable);
-	Py_XDECREF(gc_dict);
-	Py_XDECREF(gc_module);
-}
-
 struct PyScanBindData : public TableFunctionData {
 	// Function arguments coerced to a tuple used in Python calling semantics,
 	PyObject *arguments;
@@ -244,11 +221,6 @@ void FinalizePyTable(PyScanBindData &bind_data) {
 	}
 	// todo: for some reason this causes a segfault?
 	// Py_XDECREF(bind_data.arguments);
-
-	// todo: fun fact, running this results in segfaults! That shouldn't
-	// happen so clearly this is a problem that needs to be addressed.
-	// FWIW, we shouldn't *need* to trigger a garbage collection.
-	// py_collect_garbage();
 }
 
 void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
