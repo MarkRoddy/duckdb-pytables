@@ -5,23 +5,23 @@
 #include <typeinfo>
 
 namespace pyudf {
-  
+
 PythonFunction::PythonFunction(const std::string &function_specifier) {
-  std::string module_name;
-  std::string function_name;
-  std::tie(module_name, function_name) = parse_func_specifier(function_specifier);
-  init(module_name, function_name);
+	std::string module_name;
+	std::string function_name;
+	std::tie(module_name, function_name) = parse_func_specifier(function_specifier);
+	init(module_name, function_name);
 }
 
 PythonFunction::PythonFunction(const std::string &module_name, const std::string &function_name) {
-  init(module_name, function_name);
+	init(module_name, function_name);
 }
-  
+
 void PythonFunction::init(const std::string &module_name, const std::string &function_name) {
-  module_name_ = module_name;
-  function_name_ = function_name;
-  module = nullptr;
-  function = nullptr;
+	module_name_ = module_name;
+	function_name_ = function_name;
+	module = nullptr;
+	function = nullptr;
 	PyObject *module_obj = PyImport_ImportModule(module_name.c_str());
 	if (!module_obj) {
 		PyErr_Print();
@@ -63,7 +63,7 @@ std::pair<PyObject *, PythonException *> PythonFunction::call(PyObject *args) co
 std::pair<std::string, std::string> parse_func_specifier(std::string specifier) {
 	auto delim_location = specifier.find(":");
 	if (delim_location == std::string::npos) {
-          throw duckdb::InvalidInputException("Function specifier lacks a ':' to delineate module and function");
+		throw duckdb::InvalidInputException("Function specifier lacks a ':' to delineate module and function");
 	} else {
 		auto module = specifier.substr(0, delim_location);
 		auto function = specifier.substr(delim_location + 1, (specifier.length() - delim_location));
@@ -71,4 +71,4 @@ std::pair<std::string, std::string> parse_func_specifier(std::string specifier) 
 	}
 }
 
-}
+} // namespace pyudf
