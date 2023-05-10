@@ -6,9 +6,15 @@
 #include <utility>
 #include <python_exception.hpp>
 
+
+namespace pyudf {
+
+std::pair<std::string, std::string> parse_func_specifier(std::string function_specifier);
+
 class PythonFunction {
 public:
 	PythonFunction(const std::string &module_name, const std::string &function_name);
+        PythonFunction(const std::string &module_and_function);
 
 	~PythonFunction();
 
@@ -22,10 +28,12 @@ public:
 	}
 
 private:
+	void init(const std::string &module_name, const std::string &function_name);
 	std::string module_name_;
 	std::string function_name_;
 	PyObject *module;
-	PyObject *function;
+	PyObject *function;  
 };
 
+}
 #endif // PYTHONFUNCTION_H

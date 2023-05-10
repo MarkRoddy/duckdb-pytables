@@ -13,18 +13,15 @@ namespace pyudf {
 
 static void PyScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	for (idx_t row = 0; row < args.size(); row++) {
-		// Grab the Module and Function arguments. In practice these are almost always going
+		// Grab the FunctionSpecifier argument. In practice this is almost always going
 		// to be constants, but in theory they could be column values.
-		auto &mod_column = args.data[0];
-		auto module_name = mod_column.GetValue(row).GetValue<std::string>();
-		auto &func_column = args.data[1];
-		auto func_name = func_column.GetValue(row).GetValue<std::string>();
-
-		auto func = PythonFunction(module_name, func_name);
+		auto &funcspec_column = args.data[0];
+		auto funcspec_value = funcspec_column.GetValue(row).GetValue<std::string>();
+		auto func = PythonFunction(funcspec_value);
 
 		std::vector<duckdb::Value> duck_args;
 
-		for (idx_t i = 2; i < args.ColumnCount(); i++) {
+		for (idx_t i = 1; i < args.ColumnCount(); i++) {
 			// Fill the tuple with the arguments for this row
 			auto &column = args.data[i];
 			auto value = column.GetValue(row);

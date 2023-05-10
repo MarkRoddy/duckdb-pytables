@@ -33,17 +33,6 @@ struct PyScanGlobalState : public GlobalTableFunctionState {
 	}
 };
 
-std::pair<std::string, std::string> parse_func_specifier(std::string specifier) {
-	auto delim_location = specifier.find(":");
-	if (delim_location == std::string::npos) {
-		throw InvalidInputException("Function specifier lacks a ':' to delineate module and function");
-	} else {
-		auto module = specifier.substr(0, delim_location);
-		auto function = specifier.substr(delim_location + 1, (specifier.length() - delim_location));
-		return {module, function};
-	}
-}
-
 void FinalizePyTable(PyScanBindData &bind_data) {
 	// Free the iterable returned by our python function call
 	Py_DECREF(bind_data.function_result_iterable);

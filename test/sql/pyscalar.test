@@ -4,7 +4,7 @@
 
 # Before we load the extension, this will fail
 statement error
-SELECT python_udf('Sam');
+SELECT python_udf('udfs:reverse', 'Sam');
 ----
 Catalog Error: Scalar Function with name python_udf does not exist!
 
@@ -13,31 +13,36 @@ require python_udf
 
 # Confirm the extension works
 query I
-SELECT python_udf('udfs', 'reverse', 'Sam');
+SELECT python_udf('udfs:reverse', 'Sam');
 ----
 maS
 
 # Confirm a function from the standard library
 query I
-select python_udf('string', 'capwords', 'foo bar baz') as result;
+select python_udf('string:capwords', 'foo bar baz') as result;
 ----
 Foo Bar Baz
 
 # Correctly handle when a module does not exist
 statement error
-select python_udf('udf', 'reverse', 'Jane') as result;
+select python_udf('udf:reverse', 'Jane') as result;
 ----
 Invalid Error: Failed to import module: udf
 
 # Correctly handle when a function does not exist
 statement error
-select python_udf('udfs', 'reverses', 'Jane') as result;
+select python_udf('udfs:reverses', 'Jane') as result;
 ----
 Invalid Error: Failed to find function: reverses
 
 # Handle when a function generates an exception
 statement error
-select python_udf('udfs', 'scalar_throws_exception', 'Jane') as result;
+select python_udf('udfs:scalar_throws_exception', 'Jane') as result;
 ----
 Invalid Error: This is an expected error
 
+# Correctly handle when the ':' is missing from the function specifier
+statement error
+select python_udf('udfreverse', 'Jane') as result;
+----
+Invalid Input Error: Function specifier lacks a ':' to delineate module and function
