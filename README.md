@@ -36,7 +36,7 @@ Using the `python_table` function in a SQL query, you can call this Python funct
 ```
 
 ## Function Arguments
-The first argument must be a string with a value in the form of `<'module>:<function>'`. All other non-named arguments will be passed as an argument to the python function specified. For example:
+The first argument must be a string with a value in the form of `'<module>:<function>'`. All other non-named arguments will be passed as an argument to the python function specified. For example:
 
 ```sql
 SELECT *
