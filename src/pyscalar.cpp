@@ -47,8 +47,7 @@ static void PyScalarFunction(DataChunk &args, ExpressionState &state, Vector &re
 }
 
 CreateScalarFunctionInfo GetPythonScalarFunction() {
-	auto scalar_func = ScalarFunction("python_udf", {LogicalType::VARCHAR}, LogicalType::VARCHAR,
-	                                  PyScalarFunction);
+	auto scalar_func = ScalarFunction("python_udf", {LogicalType::VARCHAR}, LogicalType::VARCHAR, PyScalarFunction);
 	scalar_func.varargs = LogicalType::ANY;
 	CreateScalarFunctionInfo py_scalar_function_info(scalar_func);
 	return CreateScalarFunctionInfo(py_scalar_function_info);
