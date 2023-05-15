@@ -23,6 +23,31 @@ select python_udf('string:capwords', 'foo bar baz') as result;
 ----
 Foo Bar Baz
 
+# Confirm fizzbuzz used in the README (fizz)
+query I
+select python_udf('udfs:fizzbuzz', 3) as result;
+----
+fizz
+
+# Confirm fizzbuzz used in the README (buzz)
+query I
+select python_udf('udfs:fizzbuzz', 5) as result;
+----
+buzz
+
+# Confirm fizzbuzz used in the README (fizzbuzz)
+query I
+select python_udf('udfs:fizzbuzz', 15) as result;
+----
+fizzbuzz
+
+# Confirm fizzbuzz used in the README (no match
+query I
+select python_udf('udfs:fizzbuzz', 11) as result;
+----
+11
+
+
 # Correctly handle when a module does not exist
 statement error
 select python_udf('udf:reverse', 'Jane') as result;

@@ -6,6 +6,16 @@ def reverse(input):
 def scalar_throws_exception(input):
     raise Exception("This is an expected error")
 
+def fizzbuzz(i):
+    if (i%3) == 0 and (i%5) == 0:
+        return 'fizzbuzz'
+    elif (i%3) == 0:
+        return 'fizz'
+    elif (i%5) == 0:
+        return 'buzz'
+    else:
+        return str(i)
+    
 # Table Functions
 def table(input):
     for char in "a very long string":
@@ -111,5 +121,13 @@ class TestUdfs(unittest.TestCase):
             ['hello', 'my', 'friend'],
             ]
         self.assertEqual(actual, expected)
+
+    def test_fizzbuzz(self):
+        self.assertEqual('fizzbuzz', fizzbuzz(15))
+        self.assertEqual('fizz', fizzbuzz(3))
+        self.assertEqual('buzz', fizzbuzz(5))
+        self.assertEqual('7', fizzbuzz(7))
+
+        
 if __name__ == '__main__':
     unittest.main()
