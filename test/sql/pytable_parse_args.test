@@ -72,8 +72,6 @@ SELECT columnA, columnB FROM python_table('foo', module='udfs', columns = {'colu
 Invalid Input Error: Module specified w/o a corresponding function
 
 
-# Invalid Type Checks Typed as duckdb::LogicalType::ANY
-#######################################################
 # Handle columns not being a struct as expected
 statement error
 SELECT columnA, columnB FROM python_table('foo', module='udfs', func='index_chars', columns = 12)
