@@ -1,4 +1,4 @@
-A DuckDB extension for using Python functions in SQL queries.
+A DuckDB extension for using Python based functions in SQL queries.
 
 Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party modules. 
 
