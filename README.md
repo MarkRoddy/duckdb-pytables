@@ -1,9 +1,9 @@
 A DuckDB extension for using Python based functions in SQL queries.
 
-# Table Function 
-The `python_table` table function lets you use a python function that returns row like objects as the FROM clause in
-a SQL query. This lets you trivially wire in new data sources, including external ones, which you can then query
-using SQL, join to other data sources, etc.
+Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party modules. 
+
+# Table Functions
+The `python_table` table function lets you use the output of a python function as the FROM clause in a SQL query. This lets you trivially wire in new data sources, including external ones, to be queried using SQL, joined to other data sources, etc.
 
 ## Table Function Example
 As an example, here is a Python function that uses the PyGithub library to enumerate Git Repos for a user:
@@ -35,34 +35,83 @@ Using the `python_table` function in a SQL query, you can call this Python funct
 └─────────────────────────────┴────────────────────────────────────────────────────────────────┴────────────┘
 ```
 
-Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party libraries (assuming they fit within the current limitations, see 
-the [Current Limitations](#current-limitations) section for details).
-
 ## Function Arguments
-Any non-named arguments will be passed as an argument to the python function specified, with the exception of when 'module' and 'func' are not specified. In which case the first non-named argumented is assumed to be a string with a value in the form of `<'module>:<func>'`. This lets you choose between two calling styles:
+The first argument must be a string with a value in the form of `'<module>:<function>'`. All other non-named arguments will be passed as an argument to the python function specified. For example:
 
-Compact:
 ```sql
 SELECT *
-FROM python_table('<module>:<callable>', 'arg1', 2, 'arg3',
+FROM python_table('<module>:<function>', 'arg1', 2, 'arg3',
   columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
 ```
+This will import the name `<module>`, reference the value named `<function>`. Note this value can be a function, or any other type that supports the [callable protocol](https://docs.python.org/3/library/functions.html#callable). The extension will then call `<function>`, passing in the values `'arg1'`, `2`, and `'arg3'`.
 
-or, Explicit:
-```sql
-SELECT *
-FROM python_table(
-  'arg1', 2, 'arg3'
-  module='<module>', func='<callable>', 
-  columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
-```
 
 Please see the table below for a further breakdown of each of the named arguments.
 | named argument | description |
 | -------------- | ----------- |
-| module         | Name of the module to be imported. Any valid value after an `import ...` statement in python should work. Note if specified a value for `func` must be specified as well.|
-| func           | Name of the function or callable to be executed. Must be a valid name within module. Note if specified a value for `module` must be specified as well.|
-| columns        | Required. A struct mapping column names to expected data types.|
+| columns        | Required. A struct mapping column names to expected DuckDB data types.|
+
+# Scalar Functions
+The `python_udf` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
+
+## Scalar Function Example
+Lets say you want to take a string and apply title casing it. There is already a builtin function Python named `capwords` in the `strings` module which can do this for us, so we don't even need to write a Python function.
+
+```sql
+> SELECT python_udf('string:capwords', 'foo bar baz') as result;
+
+┌─────────────┐
+│   result    │
+│   varchar   │
+├─────────────┤
+│ Foo Bar Baz │
+└─────────────┘
+```
+
+Alternatively, lets say you need to write your own Python function. Let say you need a Fizzbuzz function you can call from SQL, because you're interviewing, and the company that's currently evaluating you is terrible. Here's the python function:
+```python
+def fizzbuzz(i):
+    if (i%3) == 0 and (i%5) == 0:
+        return 'FizzBuzz'
+    elif (i%3) == 0:
+        return 'Fizz'
+    elif (i%5) == 0:
+        return 'Buzz'
+    else:
+        return str(i)
+```
+
+You can call this function from within SQL:
+```sql
+> select python_udf('udfs:fizzbuzz', 3) as result;
+┌─────────┐
+│ result  │
+│ varchar │
+├─────────┤
+│ fizz    │
+└─────────┘
+> select python_udf('udfs:fizzbuzz', 5) as result;
+┌─────────┐
+│ result  │
+│ varchar │
+├─────────┤
+│ buzz    │
+└─────────┘
+> select python_udf('udfs:fizzbuzz', 15) as result;
+┌──────────┐
+│  result  │
+│ varchar  │
+├──────────┤
+│ fizzbuzz │
+└──────────┘
+> select python_udf('udfs:fizzbuzz', 11) as result;
+┌─────────┐
+│ result  │
+│ varchar │
+├─────────┤
+│ 11      │
+└─────────┘
+```
 
 
 ## Additional Examples and Use Cases
@@ -82,9 +131,8 @@ Note this queries the names of objects themselves, not their contents. This can 
 Note these are not inherent limitations that can not be overcome, but presently have yet to be overcome. Feel free to help with that!
 
 * Binaries only available for Linux x64 architecture. Builds for OSX and Windows coming soon.
-* Only Table functions are supported (scalarn functions forthcoming)
-* Only positional argument invocation on Python functions allowed at this time.
-* Not all DuckDB and Python datatypes have been fully mapped. Please file an issue if you need one supported.
+* Scalar functions only support returning `VARCHAR` values at this time.
+* Not all DuckDB and Python datatypes have been fully mapped. Please file an issue if you find one unsupported.
 
 # Installation and Usage
 

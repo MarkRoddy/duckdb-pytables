@@ -10,22 +10,9 @@
 #include "duckdb/function/scalar_function.hpp"
 
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
+#include <typeinfo>
 
 namespace duckdb {
-
-inline void Python_udfScalarFun(duckdb::DataChunk &args, duckdb::ExpressionState &state, duckdb::Vector &result) {
-	auto &module_vector = args.data[0];
-	auto &func_vector = args.data[1];
-	auto &arg_vector = args.data[2];
-
-	duckdb::TernaryExecutor::Execute<duckdb::string_t, duckdb::string_t, duckdb::string_t, duckdb::string_t>(
-	    module_vector, func_vector, arg_vector, result, args.size(),
-	    [&](duckdb::string_t module_name, duckdb::string_t func_name, duckdb::string_t argument) {
-		    return duckdb::StringVector::AddString(
-		        result,
-		        pyudf::executePythonFunction(module_name.GetString(), func_name.GetString(), argument.GetString()));
-	    });
-}
 
 static void LoadInternal(DatabaseInstance &instance) {
 	Connection con(instance);
@@ -34,12 +21,9 @@ static void LoadInternal(DatabaseInstance &instance) {
 	auto &catalog = Catalog::GetSystemCatalog(*con.context);
 	auto &context = *con.context;
 
-	CreateScalarFunctionInfo python_udf_fun_info(
-	    ScalarFunction("python_udf", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::VARCHAR},
-	                   LogicalType::VARCHAR, Python_udfScalarFun));
-
-	python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
-	catalog.CreateFunction(*con.context, python_udf_fun_info);
+	auto python_scalar = pyudf::GetPythonScalarFunction();
+	// python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
+	catalog.CreateFunction(*con.context, python_scalar);
 
 	// pyudf::GetPythonTableFunction();
 	auto python_table = pyudf::GetPythonTableFunction();
