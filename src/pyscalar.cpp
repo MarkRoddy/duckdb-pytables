@@ -48,7 +48,7 @@ static void PyScalarFunction(DataChunk &args, ExpressionState &state, Vector &re
 }
 
 CreateScalarFunctionInfo GetPythonScalarFunction() {
-	auto scalar_func = ScalarFunction("python_udf", {LogicalType::VARCHAR}, LogicalType::VARCHAR, PyScalarFunction);
+	auto scalar_func = ScalarFunction("pycall", {LogicalType::VARCHAR}, LogicalType::VARCHAR, PyScalarFunction);
 	scalar_func.varargs = LogicalType::ANY;
 
 	// 'named_parameters' does not appear to be supported for scalar functions

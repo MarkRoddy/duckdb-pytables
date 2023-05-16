@@ -3,7 +3,7 @@ A DuckDB extension for using Python based functions in SQL queries.
 Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party modules. 
 
 # Table Functions
-The `python_table` table function lets you use the output of a python function as the FROM clause in a SQL query. This lets you trivially wire in new data sources, including external ones, to be queried using SQL, joined to other data sources, etc.
+The `pytable` table function lets you use the output of a python function as the FROM clause in a SQL query. This lets you trivially wire in new data sources, including external ones, to be queried using SQL, joined to other data sources, etc.
 
 ## Table Function Example
 As an example, here is a Python function that uses the PyGithub library to enumerate Git Repos for a user:
@@ -18,10 +18,10 @@ def repos_for(username):
         yield (r.name, r.description, r.language)
 ```
 
-Using the `python_table` function in a SQL query, you can call this Python function and query its output.
+Using the `pytable` function in a SQL query, you can call this Python function and query its output.
 ```sql
 > SELECT *
-  FROM python_table('ghub:repos_for', 'markroddy',
+  FROM pytable('ghub:repos_for', 'markroddy',
                     columns = {'repo': 'VARCHAR', 'description': 'VARCHAR', 'language': 'VARCHAR'})
   WHERE repo like '%duck%';
 ┌─────────────────────────────┬────────────────────────────────────────────────────────────────┬────────────┐
@@ -40,7 +40,7 @@ The first argument must be a string with a value in the form of `'<module>:<func
 
 ```sql
 SELECT *
-FROM python_table('<module>:<function>', 'arg1', 2, 'arg3',
+FROM pytable('<module>:<function>', 'arg1', 2, 'arg3',
   columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
 ```
 This will import the name `<module>`, reference the value named `<function>`. Note this value can be a function, or any other type that supports the [callable protocol](https://docs.python.org/3/library/functions.html#callable). The extension will then call `<function>`, passing in the values `'arg1'`, `2`, and `'arg3'`.
@@ -53,13 +53,13 @@ Please see the table below for a further breakdown of each of the named argument
 | kwargs         | Optional. A struct mapping named arguments to be passed to the python function. In python, this is passed as if you called `func(**kwargs)`. |
 
 # Scalar Functions
-The `python_udf` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
+The `pycall` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
 
 ## Scalar Function Example
 Lets say you want to take a string and apply title casing it. There is already a builtin function Python named `capwords` in the `strings` module which can do this for us, so we don't even need to write a Python function.
 
 ```sql
-> SELECT python_udf('string:capwords', 'foo bar baz') as result;
+> SELECT pycall('string:capwords', 'foo bar baz') as result;
 
 ┌─────────────┐
 │   result    │
@@ -84,28 +84,28 @@ def fizzbuzz(i):
 
 You can call this function from within SQL:
 ```sql
-> select python_udf('udfs:fizzbuzz', 3) as result;
+> select pycall('udfs:fizzbuzz', 3) as result;
 ┌─────────┐
 │ result  │
 │ varchar │
 ├─────────┤
 │ fizz    │
 └─────────┘
-> select python_udf('udfs:fizzbuzz', 5) as result;
+> select pycall('udfs:fizzbuzz', 5) as result;
 ┌─────────┐
 │ result  │
 │ varchar │
 ├─────────┤
 │ buzz    │
 └─────────┘
-> select python_udf('udfs:fizzbuzz', 15) as result;
+> select pycall('udfs:fizzbuzz', 15) as result;
 ┌──────────┐
 │  result  │
 │ varchar  │
 ├──────────┤
 │ fizzbuzz │
 └──────────┘
-> select python_udf('udfs:fizzbuzz', 11) as result;
+> select pycall('udfs:fizzbuzz', 11) as result;
 ┌─────────┐
 │ result  │
 │ varchar │
@@ -151,22 +151,11 @@ LOAD python_udf;
 ## Writing Python Functions for Use as Tables
 Python functions can accept an arbitrary number of primitive data which can be invoked in a positional manner.
 
-These functions must return an interator (or use the 'yield' syntax). Each value in this iterator will represent
+These functions must return an iterator (or use the 'yield' syntax). Each value in this iterator will represent
 a single row in the database table. As such, the number of values in each row must be consistent across all rows,
 and it must match the number of columns specified when the function is invoked from SQL. Additionally, the data
 type for each value should be convertable to the column data type specified. If the conversion is not possible a
 null value will be substituted.
-
-## Invoking from SQL
-Below is a description of the `python_table()` DuckDB function which exposes Python functions as tables within DuckDB. Note
-that this function is still a work in progress, and as such you should expect the argument syntax of this function to change.
-
-The `python_table` function requires four arguments:
-
-1. module: The module that contains the function or callable you wish to invoke. Note this string must be importable. If the import fails the SQL query will fail.
-1. function: The name of the function to be invoked. A function or callable with this name must exist in the module, or the query will fail.
-1. column_names_and_types: a DuckDB struct mapping column names to their underlying DuckDB data types.
-1. arguments: arugments to the Python function to be invoked.
 
 
 ## Setting the Unsigned Option
@@ -220,7 +209,7 @@ To run the extension code, simply start the shell with `./build/release/duckdb`.
 
 Now we can use the features from the extension directly in DuckDB. Included in this extension is the ability to execute python functions. Bundled with this repository is a python file named 'udfs.py' that contains some example functions. You can invoke a function in this module by specifying the module name, the function name, and a single string argument to be passed to the function:
 ```
-D select python_udf('udfs', 'reverse', 'Jane') as result;
+D select pycall('udfs:reverse', 'Jane') as result;
 ┌───────────────┐
 │    result     │
 │    varchar    │
