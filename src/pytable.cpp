@@ -209,7 +209,7 @@ unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, 
 
 unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
 	auto py_table_function =
-	    TableFunction("python_table", {}, PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
+	    TableFunction("pytable", {}, PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
 
 	// todo: don't configure this for older versions of duckdb
 	py_table_function.varargs = LogicalType::ANY;
