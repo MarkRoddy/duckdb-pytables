@@ -53,13 +53,13 @@ Please see the table below for a further breakdown of each of the named argument
 | kwargs         | Optional. A struct mapping named arguments to be passed to the python function. In python, this is passed as if you called `func(**kwargs)`. |
 
 # Scalar Functions
-The `pyfunc` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
+The `pycall` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
 
 ## Scalar Function Example
 Lets say you want to take a string and apply title casing it. There is already a builtin function Python named `capwords` in the `strings` module which can do this for us, so we don't even need to write a Python function.
 
 ```sql
-> SELECT pyfunc('string:capwords', 'foo bar baz') as result;
+> SELECT pycall('string:capwords', 'foo bar baz') as result;
 
 ┌─────────────┐
 │   result    │
@@ -84,28 +84,28 @@ def fizzbuzz(i):
 
 You can call this function from within SQL:
 ```sql
-> select pyfunc('udfs:fizzbuzz', 3) as result;
+> select pycall('udfs:fizzbuzz', 3) as result;
 ┌─────────┐
 │ result  │
 │ varchar │
 ├─────────┤
 │ fizz    │
 └─────────┘
-> select pyfunc('udfs:fizzbuzz', 5) as result;
+> select pycall('udfs:fizzbuzz', 5) as result;
 ┌─────────┐
 │ result  │
 │ varchar │
 ├─────────┤
 │ buzz    │
 └─────────┘
-> select pyfunc('udfs:fizzbuzz', 15) as result;
+> select pycall('udfs:fizzbuzz', 15) as result;
 ┌──────────┐
 │  result  │
 │ varchar  │
 ├──────────┤
 │ fizzbuzz │
 └──────────┘
-> select pyfunc('udfs:fizzbuzz', 11) as result;
+> select pycall('udfs:fizzbuzz', 11) as result;
 ┌─────────┐
 │ result  │
 │ varchar │
@@ -209,7 +209,7 @@ To run the extension code, simply start the shell with `./build/release/duckdb`.
 
 Now we can use the features from the extension directly in DuckDB. Included in this extension is the ability to execute python functions. Bundled with this repository is a python file named 'udfs.py' that contains some example functions. You can invoke a function in this module by specifying the module name, the function name, and a single string argument to be passed to the function:
 ```
-D select pyfunc('udfs:reverse', 'Jane') as result;
+D select pycall('udfs:reverse', 'Jane') as result;
 ┌───────────────┐
 │    result     │
 │    varchar    │

@@ -1,73 +1,73 @@
-# name: test/sql/pyfunc.test
-# description: test pyfunc extension
-# group: [pyfunc]
+# name: test/sql/pyscalar.test
+# description: test python_udf extension
+# group: [pycall]
 
 # Before we load the extension, this will fail
 statement error
-SELECT pyfunc('udfs:reverse', 'Sam');
+SELECT pycall('udfs:reverse', 'Sam');
 ----
-Catalog Error: Scalar Function with name pyfunc does not exist!
+Catalog Error: Scalar Function with name pycall does not exist!
 
 # Require statement will ensure this test is run with this extension loaded
 require python_udf
 
 # Confirm the extension works
 query I
-SELECT pyfunc('udfs:reverse', 'Sam');
+SELECT pycall('udfs:reverse', 'Sam');
 ----
 maS
 
 # Confirm a function from the standard library
 query I
-select pyfunc('string:capwords', 'foo bar baz') as result;
+select pycall('string:capwords', 'foo bar baz') as result;
 ----
 Foo Bar Baz
 
 # Confirm fizzbuzz used in the README (fizz)
 query I
-select pyfunc('udfs:fizzbuzz', 3) as result;
+select pycall('udfs:fizzbuzz', 3) as result;
 ----
 fizz
 
 # Confirm fizzbuzz used in the README (buzz)
 query I
-select pyfunc('udfs:fizzbuzz', 5) as result;
+select pycall('udfs:fizzbuzz', 5) as result;
 ----
 buzz
 
 # Confirm fizzbuzz used in the README (fizzbuzz)
 query I
-select pyfunc('udfs:fizzbuzz', 15) as result;
+select pycall('udfs:fizzbuzz', 15) as result;
 ----
 fizzbuzz
 
 # Confirm fizzbuzz used in the README (no match
 query I
-select pyfunc('udfs:fizzbuzz', 11) as result;
+select pycall('udfs:fizzbuzz', 11) as result;
 ----
 11
 
 
 # Correctly handle when a module does not exist
 statement error
-select pyfunc('udf:reverse', 'Jane') as result;
+select pycall('udf:reverse', 'Jane') as result;
 ----
 Invalid Error: Failed to import module: udf
 
 # Correctly handle when a function does not exist
 statement error
-select pyfunc('udfs:reverses', 'Jane') as result;
+select pycall('udfs:reverses', 'Jane') as result;
 ----
 Invalid Error: Failed to find function: reverses
 
 # Handle when a function generates an exception
 statement error
-select pyfunc('udfs:scalar_throws_exception', 'Jane') as result;
+select pycall('udfs:scalar_throws_exception', 'Jane') as result;
 ----
 Invalid Error: This is an expected error
 
 # Correctly handle when the ':' is missing from the function specifier
 statement error
-select pyfunc('udfreverse', 'Jane') as result;
+select pycall('udfreverse', 'Jane') as result;
 ----
 Invalid Input Error: Function specifier lacks a ':' to delineate module and function
