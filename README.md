@@ -50,6 +50,7 @@ Please see the table below for a further breakdown of each of the named argument
 | named argument | description |
 | -------------- | ----------- |
 | columns        | Required. A struct mapping column names to expected DuckDB data types.|
+| kwargs         | Optional. A struct mapping named arguments to be passed to the python function. In python, this is passed as if you called `func(**kwargs)`. |
 
 # Scalar Functions
 The `python_udf` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
@@ -112,7 +113,6 @@ You can call this function from within SQL:
 │ 11      │
 └─────────┘
 ```
-
 
 ## Additional Examples and Use Cases
 Since anything you can do in Python can now show up in DuckDB as a table, the world is your oyster here. In particular, it's trivial to make any external resource that has a python library associated with it show up as a database table. Some things you might want to try (all of which can be found in the [examples/ directory](examples/)). Note, be sure to include the relevant file from the `examples/` directory in your Python path or these won't work.

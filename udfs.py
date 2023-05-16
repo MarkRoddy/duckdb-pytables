@@ -66,6 +66,10 @@ def sentence_to_columns(sentence, rows):
     for _ in range(int(rows)):
         yield sentence.split(" ")
 
+def screaming_in_the_void():
+    """Example function with no arguments for testing"""
+    return table("foo bar")
+
 import unittest
 
 class TestUdfs(unittest.TestCase):

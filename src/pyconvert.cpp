@@ -6,43 +6,51 @@
 
 namespace pyudf {
 
-PyObject *duckdb_to_py(std::vector<duckdb::Value> &values) {
+PyObject *duckdb_to_py(duckdb::Value &value) {
+	PyObject *py_value = nullptr;
+
+	switch (value.type().id()) {
+	case duckdb::LogicalTypeId::BOOLEAN:
+		py_value = PyBool_FromLong(value.GetValue<bool>());
+		break;
+	case duckdb::LogicalTypeId::TINYINT:
+		py_value = PyLong_FromLong(value.GetValue<int8_t>());
+		break;
+	case duckdb::LogicalTypeId::SMALLINT:
+		py_value = PyLong_FromLong(value.GetValue<int16_t>());
+		break;
+	case duckdb::LogicalTypeId::INTEGER:
+		py_value = PyLong_FromLong(value.GetValue<int32_t>());
+		break;
+	case duckdb::LogicalTypeId::BIGINT:
+		py_value = PyLong_FromLongLong(value.GetValue<int64_t>());
+		break;
+	case duckdb::LogicalTypeId::FLOAT:
+		py_value = PyFloat_FromDouble(value.GetValue<float>());
+		break;
+	case duckdb::LogicalTypeId::DOUBLE:
+		py_value = PyFloat_FromDouble(value.GetValue<double>());
+		break;
+	case duckdb::LogicalTypeId::VARCHAR:
+		py_value = PyUnicode_FromString(value.GetValue<std::string>().c_str());
+		break;
+	case duckdb::LogicalTypeId::STRUCT:
+		py_value = StructToDict(value);
+		break;
+	default:
+		std::cerr << "Unhandled Logical Type: " + value.type().ToString() << std::endl;
+		Py_INCREF(Py_None);
+		py_value = Py_None;
+	}
+	return py_value;
+}
+
+PyObject *duckdbs_to_pys(std::vector<duckdb::Value> &values) {
 	PyObject *py_tuple = PyTuple_New(values.size());
 
 	for (size_t i = 0; i < values.size(); i++) {
 		PyObject *py_value = nullptr;
-
-		switch (values[i].type().id()) {
-		case duckdb::LogicalTypeId::BOOLEAN:
-			py_value = PyBool_FromLong(values[i].GetValue<bool>());
-			break;
-		case duckdb::LogicalTypeId::TINYINT:
-			py_value = PyLong_FromLong(values[i].GetValue<int8_t>());
-			break;
-		case duckdb::LogicalTypeId::SMALLINT:
-			py_value = PyLong_FromLong(values[i].GetValue<int16_t>());
-			break;
-		case duckdb::LogicalTypeId::INTEGER:
-			py_value = PyLong_FromLong(values[i].GetValue<int32_t>());
-			break;
-		case duckdb::LogicalTypeId::BIGINT:
-			py_value = PyLong_FromLongLong(values[i].GetValue<int64_t>());
-			break;
-		case duckdb::LogicalTypeId::FLOAT:
-			py_value = PyFloat_FromDouble(values[i].GetValue<float>());
-			break;
-		case duckdb::LogicalTypeId::DOUBLE:
-			py_value = PyFloat_FromDouble(values[i].GetValue<double>());
-			break;
-		case duckdb::LogicalTypeId::VARCHAR:
-			py_value = PyUnicode_FromString(values[i].GetValue<std::string>().c_str());
-			break;
-		default:
-			std::cerr << "Unhandled Logical Type: " + values[i].type().ToString() << std::endl;
-			Py_INCREF(Py_None);
-			py_value = Py_None;
-		}
-
+		py_value = duckdb_to_py(values[i]);
 		PyTuple_SetItem(py_tuple, i, py_value);
 	}
 
@@ -96,6 +104,9 @@ duckdb::Value ConvertPyObjectToDuckDBValue(PyObject *py_item, duckdb::LogicalTyp
 		}
 		break;
 		// Add more cases for other LogicalTypes here
+	case duckdb::LogicalTypeId::STRUCT:
+		py_value = StructToDict(value);
+		break;
 	default:
 		conversion_failed = true;
 	}
@@ -175,6 +186,23 @@ PyObject *pyObjectToIterable(PyObject *py_object) {
 	}
 
 	return py_iter;
+}
+
+PyObject *StructToDict(duckdb::Value value) {
+	// Build the keyword argument dictionary
+	PyObject *py_value = PyDict_New();
+	auto &child_type = value.type();
+	auto &struct_children = duckdb::StructValue::GetChildren(value);
+	D_ASSERT(StructType::GetChildCount(child_type) == struct_children.size());
+	for (idx_t i = 0; i < struct_children.size(); i++) {
+		duckdb::Value name = duckdb::StructType::GetChildName(child_type, i);
+		duckdb::Value val = struct_children[i];
+
+		auto pyName = duckdb_to_py(name);
+		auto pyValue = duckdb_to_py(val);
+		PyDict_SetItem(py_value, pyName, pyValue);
+	}
+	return py_value;
 }
 
 } // namespace pyudf

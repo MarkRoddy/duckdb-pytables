@@ -5,4 +5,4 @@
 
 namespace pyudf {
 duckdb::unique_ptr<duckdb::CreateTableFunctionInfo> GetPythonTableFunction();
-}
+} // namespace pyudf

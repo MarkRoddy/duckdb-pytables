@@ -29,6 +29,10 @@ pull:
 	git submodule init
 	git submodule update --recursive --remote
 
+revert-submodules:
+	git submodule deinit -f .
+	git submodule update --init
+
 clean:
 	rm -rf build
 	rm -rf testext
@@ -54,11 +58,21 @@ extension-debug:
 # Main tests
 test: test_release
 
-test_release: release
+test_legacy: test_legacy_release
+
+test_legacy_release:
+	python3 udfs.py
+	./build/release/test/unittest --test-dir . "[legacy]"
+
+test_legacy_debug:
+	python3 udfs.py
+	./build/debug/test/unittest --test-dir . "[legacy]"
+
+test_release:
 	python3 udfs.py
 	./build/release/test/unittest --test-dir . "[sql]"
 
-test_debug: debug
+test_debug:
 	python3 udfs.py
 	ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
 
@@ -67,6 +81,8 @@ check-format:
 
 format:
 	find src/ -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -Werror --sort-includes=0 -style=file -i
+
+fmt: format
 
 update:
 	git submodule update --remote --merge
