@@ -193,7 +193,7 @@ PyObject *StructToDict(duckdb::Value value) {
 	PyObject *py_value = PyDict_New();
 	auto &child_type = value.type();
 	auto &struct_children = duckdb::StructValue::GetChildren(value);
-	D_ASSERT(StructType::GetChildCount(child_type) == struct_children.size());
+	D_ASSERT(duckdb::StructType::GetChildCount(child_type) == struct_children.size());
 	for (idx_t i = 0; i < struct_children.size(); i++) {
 		duckdb::Value name = duckdb::StructType::GetChildName(child_type, i);
 		duckdb::Value val = struct_children[i];
