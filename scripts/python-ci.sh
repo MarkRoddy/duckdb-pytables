@@ -6,11 +6,11 @@ echo "Entering python land..."
 cd pythonpkgs/
 
 echo "Checking that we have a python..."
-which python
+which python3.9
 
 # Create a virtual environment
 echo "Creating our virtual environment"
-python -m venv myenv
+python3.9 -m venv myenv
 echo "Sourcing the env"
 source myenv/bin/activate
 
