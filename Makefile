@@ -56,7 +56,7 @@ extension-debug:
 	cmake --build build/debug --config Debug
 
 python-ci:
-	./scripts/python-ci.sh
+	bash ./scripts/python-ci.sh
 
 # Main tests
 test: test_release
