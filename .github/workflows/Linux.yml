@@ -52,6 +52,7 @@ jobs:
       with:
         path: |
           build/
+          ~/.ccache/
         key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
         
     - name: Checkout DuckDB to version
