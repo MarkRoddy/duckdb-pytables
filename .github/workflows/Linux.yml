@@ -15,7 +15,8 @@ jobs:
     strategy:
       matrix:
         # Add commits/tags to build against other DuckDB versions
-        duckdb_version: [ '<submodule_version>']
+        duckdb_version: ['<submodule_version>']
+        python_version: ['3.9']
         # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
         arch: ['linux_amd64']
         include:
@@ -40,6 +41,11 @@ jobs:
         apt-get update -y -qq
         apt-get install -y -qq ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client git clang-format libasan6 ccache
         git config --global --add safe.directory '*'
+
+    # - name: Set up Python ${{ matrix.python_version }}
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: ${{ matrix.python_version }}
 
     - uses: actions/checkout@v3
       with:
@@ -114,6 +120,10 @@ jobs:
     - name: Code Format Check
       run: |
         make check-format
+
+    - name: Build / Test Python Libraries
+      run: |
+        make python-ci
         
     - uses: actions/upload-artifact@v2
       with:
