@@ -59,6 +59,7 @@ python-ci: ./scripts/python-ci.sh
 	bash ./scripts/python-ci.sh
 
 python-release:
+	rm -f pythonpkgs/ducktables/dist/duck*
 	bash ./scripts/python-release.sh
 
 python-test-integration:
