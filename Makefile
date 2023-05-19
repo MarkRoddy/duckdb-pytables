@@ -62,6 +62,8 @@ python-release:
 	rm -f pythonpkgs/ducktables/dist/duck*
 	bash ./scripts/python-release.sh
 
+python-test:
+	bash ./scripts/python-test.sh
 python-test-integration:
 	bash ./scripts/python-test-integration.sh
 

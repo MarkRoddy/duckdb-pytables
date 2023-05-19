@@ -7,6 +7,6 @@ testext
 test/python/__pycache__/
 .Rhistory
 duckdb-*
-pythonpkgs/myenv/
+pythonpkgs/*env/
 pythonpkgs/ducktables/dist/
 pythonpkgs/ducktables/ducktables.egg-info/
