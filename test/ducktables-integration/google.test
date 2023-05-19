@@ -35,7 +35,7 @@ SELECT * FROM pytable('ducktables.google.analytics:metrics',
 
 
 # Query Event Counts from Google Analytics
-query IIIII
+query IIIIII
 SELECT
   date, hour, category, action, label, event_count
 FROM pytable('ducktables.google.analytics:events', '186067418', '2023-04-18', '2023-04-18',
