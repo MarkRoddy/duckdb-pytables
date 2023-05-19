@@ -1,0 +1,53 @@
+# name: test/ducktables-integration/google.test
+# description: Test Google Table Functions
+# group: [ducktables-integration]
+
+# Require statement will ensure this test is run with this extension loaded
+require python_udf
+
+
+# Test the Google Sheets integration with their supplied readonly sheet
+query IIIIII
+SELECT *
+FROM pytable('ducktables.google:sheet', '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', 'Class Data!A2:F31',
+     columns = {
+             'name': 'VARCHAR', 'gender': 'VARCHAR', 'class_level': 'VARCHAR',
+             'state': 'VARCHAR', 'major': 'VARCHAR', 'extracurricular': 'VARCHAR'}
+    )
+ORDER BY name ASC
+LIMIT 2
+----
+Alexandra	Female	4. Senior	CA	English	Drama Club
+Andrew	Male	1. Freshman	SD	Math	Lacrosse
+
+
+
+# Query Metrics from Google Analytics
+query II
+SELECT * FROM pytable('ducktables.google.analytics:metrics',
+      '186067418', '2023-03-01', '2023-03-05', 'ga:date', 'ga:sessions',
+      columns = {'date': 'VARCHAR', 'sessions': 'INT'})
+----
+20230301	4
+20230303	1
+20230304	2
+20230305	1
+
+
+# Query Event Counts from Google Analytics
+query IIIIII
+SELECT
+  date, hour, category, action, label, event_count
+FROM pytable('ducktables.google.analytics:events', '186067418', '2023-04-18', '2023-04-18',
+  columns = {
+  -- Dimensions
+  'date': 'VARCHAR', 'hour': 'VARCHAR', 'category': 'VARCHAR', 'action': 'VARCHAR', 'label': 'VARCHAR',
+  'pagePath': 'VARCHAR', 'source': 'VARCHAR', 'medium': 'VARCHAR',
+  -- Metrics
+  'event_count': 'INT'
+})
+WHERE action = 'login'
+----
+20230418	11	auth	login	failure	3
+20230418	12	auth	login	success	1
+20230418	13	auth	login	success	1

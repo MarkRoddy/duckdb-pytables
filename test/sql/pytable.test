@@ -83,7 +83,7 @@ n
 g
 
 
-# Test mutliple columsn with diff data types
+# Test mutliple columns with diff data types
 query II
 SELECT columnA, columnB FROM pytable('udfs:index_chars', 'foo', columns={'columnA': 'INT', 'columnB': 'VARCHAR'})
 ----

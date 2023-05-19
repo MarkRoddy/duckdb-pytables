@@ -16,51 +16,6 @@ def _key_path(key_file_path = None):
     return key_file_path
     
 
-def analytics(view_id, start_date, end_date, dimensions = None, metrics = None, key_file_path = None):
-    """
-    SQL Usage:
-    SELECT * FROM pytable('google_:analytics', '<view-id>', '<start-date>', '<end-date>',
-      columns = {
-        -- Dimensions
-        'date': 'VARCHAR', 'hour': 'VARCHAR', 'pagePath': 'VARCHAR', 'source': 'VARCHAR', 'medium': 'VARCHAR',
-        -- Metrics
-        'sessions': 'INT', 'users': 'INT', 'pageviews': 'INT', 'avgSessionDuration': 'FLOAT', 'bounceRate': 'FLOAT'
-        });
-
-    # Note that this function lets you specify a list of dimensions and/or metrics. If you use non-default
-    # values for these you will need to update the 'columns' struct from the example above.
-    """
-    key_file_path = _key_path(key_file_path)
-    # Load credentials from JSON file
-    credentials = service_account.Credentials.from_service_account_file(key_file_path)
-    
-    # Build the Google Analytics Reporting API client
-    analytics = build('analyticsreporting', 'v4', credentials=credentials)
-
-    if not metrics:
-        metrics = ['ga:sessions', 'ga:users', 'ga:pageviews', 'ga:avgSessionDuration', 'ga:bounceRate']
-    if not dimensions:
-        dimensions = ['ga:date', 'ga:hour', 'ga:pagePath', 'ga:source', 'ga:medium']
-    
-    # Retrieve GA data using the API
-    response = analytics.reports().batchGet(
-        body={
-            'reportRequests': [{
-                'viewId': view_id,
-                'dateRanges': [{'startDate': start_date, 'endDate': end_date}],
-                # 'metrics': [{'expression': 'ga:sessions'}, {'expression': 'ga:users'}],
-                'metrics': [ {'expression': m} for m in metrics],
-                # 'dimensions': [{'name': 'ga:date'}]
-                'dimensions': [{'name': d} for d in dimensions],
-            }]
-        }
-    ).execute()
-    
-    # Extract data from the API response
-    report = response['reports'][0]
-    for row in report['data']['rows']:
-        yield row['dimensions'] + row['metrics'][0]['values']
-
 def sheet(sheets_url_or_key, cell_range, key_file_path = None):
     """
     SQL Usage:

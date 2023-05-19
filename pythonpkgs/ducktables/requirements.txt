@@ -8,3 +8,5 @@ gspread==5.8.0
 openai==0.27.4
 PyGithub==1.58.1
 s3transfer==0.6.0
+boto3==1.26.117
+oauth2client==4.1.3
