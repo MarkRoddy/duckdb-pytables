@@ -61,6 +61,9 @@ python-ci: ./scripts/python-ci.sh
 python-release:
 	bash ./scripts/python-release.sh
 
+python-test-integration:
+	bash ./scripts/python-test-integration.sh
+
 # Main tests
 test: test_release
 

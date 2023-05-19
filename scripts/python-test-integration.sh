@@ -2,6 +2,11 @@
 
 set -e;
 
+if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+   echo "Please specify a path to your Google credentials file via GOOGLE_APPLICATION_CREDENTIALS";
+   exit 1;
+fi
+   
 echo "Entering python land..."
 cd pythonpkgs/
 
@@ -24,16 +29,7 @@ pip install --upgrade pip
 echo "Installing dependencies"
 pip install -r requirements.txt
 
-# Run unit tests
-echo "Running tests..."
-python -m unittest discover -s tests/ducktables/
+cd ../../
 
-# Build the package
-echo "Creating package..."
-python setup.py sdist
-
-# Deactivate the virtual environment
-deactivate
-
-# Clean up
-rm -rf myenv
+export PYTHONPATH=pythonpkgs/ducktables
+./build/release/test/unittest --test-dir . "[ducktables-integration]"
