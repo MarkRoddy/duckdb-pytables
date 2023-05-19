@@ -6,7 +6,7 @@ from ducktables.google import _key_path
 def metrics(view_id, start_date, end_date, dimensions = None, metrics = None, key_file_path = None):
     """
     SQL Usage:
-    SELECT * FROM pytable('google_:analytics', '<view-id>', '<start-date>', '<end-date>',
+    SELECT * FROM pytable('ducktables.google.analytics:metrics', '<view-id>', '<start-date>', '<end-date>',
       columns = {
         -- Dimensions
         'date': 'VARCHAR', 'hour': 'VARCHAR', 'pagePath': 'VARCHAR', 'source': 'VARCHAR', 'medium': 'VARCHAR',
@@ -61,3 +61,26 @@ def metrics(view_id, start_date, end_date, dimensions = None, metrics = None, ke
             else:
                 coerced.append(int(v))
         yield row['dimensions'] + coerced
+
+
+def events(view_id, start_date, end_date, key_file_path = None):
+    """
+    SQL Usage:
+
+    SELECT * FROM pytable('ducktables.google.analytics:events', '<view-id>', '<start-date>', '<end-date>',
+      columns = {
+        -- Dimensions
+        'date': 'VARCHAR', 'hour': 'VARCHAR', 'category': 'VARCHAR', 'action': 'VARCHAR', 'label': 'VARCHAR',
+        'pagePath': 'VARCHAR', 'source': 'VARCHAR', 'medium': 'VARCHAR',
+
+        -- Metrics
+        'event_count': 'INT'
+        });
+    """
+    dimension_names = [
+        'ga:date', 'ga:hour', 'ga:eventCategory', 'ga:eventAction',
+        'ga:eventLabel', 'ga:pagePath', 'ga:source', 'ga:medium'
+        ]
+    metric_names = ['ga:totalEvents']
+    return metrics(view_id, start_date, end_date, dimension_names, metric_names, key_file_path)
+

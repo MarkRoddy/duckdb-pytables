@@ -34,3 +34,20 @@ SELECT * FROM pytable('ducktables.google.analytics:metrics',
 20230305	1
 
 
+# Query Event Counts from Google Analytics
+query IIIII
+SELECT
+  date, hour, category, action, label, event_count
+FROM pytable('ducktables.google.analytics:events', '186067418', '2023-04-18', '2023-04-18',
+  columns = {
+  -- Dimensions
+  'date': 'VARCHAR', 'hour': 'VARCHAR', 'category': 'VARCHAR', 'action': 'VARCHAR', 'label': 'VARCHAR',
+  'pagePath': 'VARCHAR', 'source': 'VARCHAR', 'medium': 'VARCHAR',
+  -- Metrics
+  'event_count': 'INT'
+})
+WHERE action = 'login'
+----
+20230418	11	auth	login	failure	3
+20230418	12	auth	login	success	1
+20230418	13	auth	login	success	1
