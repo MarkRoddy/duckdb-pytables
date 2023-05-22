@@ -48,14 +48,14 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 	// PyRun_SimpleString("import sys; sys.path.insert(0, '')\n");
 
-
-        
-        // todo: auto populate this against the version of libpython we're building against
-        void* libpython = dlopen(PYTHON_LIB_NAME, RTLD_NOW | RTLD_GLOBAL);
-        if (!libpython) {
-          // todo: user is in a bad shape if something goes wrong here. Give a useful message.
-          std::cerr << "Failed to dyanmically load your libpython shared library: PYTHON_LIB_NAME. You may see errors about missing symbols." << std::endl;
-        }
+	// todo: auto populate this against the version of libpython we're building against
+	void *libpython = dlopen(PYTHON_LIB_NAME, RTLD_NOW | RTLD_GLOBAL);
+	if (!libpython) {
+		// todo: user is in a bad shape if something goes wrong here. Give a useful message.
+		std::cerr << "Failed to dyanmically load your libpython shared library: PYTHON_LIB_NAME. You may see errors "
+		             "about missing symbols."
+		          << std::endl;
+	}
 	con.Commit();
 }
 
