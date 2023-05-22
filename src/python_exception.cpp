@@ -19,8 +19,18 @@ PythonException::PythonException() {
 		PyObject *py_value_str = PyObject_Str(pvalue);
 		PyObject *py_traceback_str = PyObject_Str(ptraceback);
 
-		message = PyUnicode_AsUTF8(py_value_str);
-		traceback = PyUnicode_AsUTF8(py_traceback_str);
+
+                // message = PyUnicode_AsUTF8AndSize(py_value_str, nullptr);
+                // py_value = PyUnicode_AsUTF8String(py_item);
+                // value = duckdb::Value(PyBytes_AsString(py_value));
+                auto py_value_unicode = PyUnicode_AsUTF8String(py_value_str);
+                message = PyBytes_AsString(py_value_unicode);
+                Py_DECREF(py_value_unicode);
+
+                auto py_traceback_unicode = PyUnicode_AsUTF8String(py_traceback_str);
+                traceback = PyBytes_AsString(py_traceback_unicode);
+                Py_DECREF(py_traceback_unicode);
+		// traceback = PyUnicode_AsUTF8AndSize(py_traceback_str, nullptr);
 
 		Py_DECREF(py_type_str);
 		Py_DECREF(py_value_str);

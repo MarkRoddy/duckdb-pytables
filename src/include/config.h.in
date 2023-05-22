@@ -1,0 +1,2 @@
+
+#define PYTHON_LIB_NAME "@PYTHON_LIB_NAME@"
