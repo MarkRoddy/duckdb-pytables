@@ -30,7 +30,7 @@ python -m unittest discover -s tests/ducktables/
 
 # Build the package
 echo "Creating package..."
-python setup.py sdist
+python setup.py sdist bdist_wheel
 
 # Deactivate the virtual environment
 deactivate
