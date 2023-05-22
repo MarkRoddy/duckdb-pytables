@@ -19,6 +19,7 @@ cd ducktables;
 # Upgrade pip
 echo "Upgrading pip..."
 pip install --upgrade pip
+pip install wheel
 
 # Install dependencies
 echo "Installing dependencies"
