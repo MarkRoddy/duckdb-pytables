@@ -124,6 +124,10 @@ jobs:
     - name: Build / Test Python Libraries
       run: |
         make python-ci
+
+    - name: Run Integration Tests
+      run: |
+        make extension-integration-tests
         
     - uses: actions/upload-artifact@v2
       with:
