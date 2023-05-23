@@ -4,9 +4,6 @@ inputs:
   openssl:
     description: 'OpenSSL'
     default: 0
-  python:
-    description: 'Python'
-    default: 0
   aarch64_cross_compile:
     description: 'Install dependencies for aarch64 cross-compiling'
     default: 0
@@ -31,14 +28,6 @@ runs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-
-    - name: Install Python 3.7
-      if: ${{ inputs.python }} == 1
-      shell: bash
-      run: |
-        python3.9 --version
-        python3.9 -m pip install pip
-        python3.9 -m pip install requests awscli
 
     - name: Install CMake 3.21
       shell: bash
