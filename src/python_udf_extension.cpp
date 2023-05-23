@@ -1,5 +1,8 @@
 #define DUCKDB_EXTENSION_MAIN
 
+#include <dlfcn.h>
+#include <iostream>
+#include "config.h"
 #include <Python.h>
 #include "pyscalar.hpp"
 #include "pytable.hpp"
@@ -43,7 +46,12 @@ static void LoadInternal(DatabaseInstance &instance) {
 	 command, or -m module.
 	*/
 
-	PyRun_SimpleString("import sys; sys.path.insert(0, '')\n");
+	void *libpython = dlopen(PYTHON_LIB_NAME, RTLD_NOW | RTLD_GLOBAL);
+	if (!libpython) {
+		std::cerr << "Failed to dyanmically load your libpython shared library: PYTHON_LIB_NAME. You may see errors "
+		             "about missing symbols."
+		          << std::endl;
+	}
 	con.Commit();
 }
 

@@ -7,9 +7,18 @@ set(EXTENSION_NAME ${TARGET_NAME}_extension)
 project(${TARGET_NAME})
 
 find_package(Python REQUIRED COMPONENTS Development)
+get_filename_component(PYTHON_LIB_NAME ${Python_LIBRARIES} NAME)
+
+configure_file(src/include/config.h.in config.h @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 include_directories(src/include ${Python_INCLUDE_DIRS})
 
 FILE(GLOB EXTENSION_SOURCES src/*.cpp)
+
+# Define Py_LIMITED_API for all source files, pins us to Python 3.4.
+add_definitions(-DPy_LIMITED_API=0x03040000)
+
 add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
 
 set(PARAMETERS "-warnings")

@@ -19,6 +19,7 @@ cd ducktables;
 # Upgrade pip
 echo "Upgrading pip..."
 pip install --upgrade pip
+pip install wheel
 
 # Install dependencies
 echo "Installing dependencies"
@@ -30,7 +31,7 @@ python -m unittest discover -s tests/ducktables/
 
 # Build the package
 echo "Creating package..."
-python setup.py sdist
+python setup.py sdist bdist_wheel
 
 # Deactivate the virtual environment
 deactivate

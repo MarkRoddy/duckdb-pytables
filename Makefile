@@ -65,6 +65,14 @@ python-release:
 python-test-integration:
 	bash ./scripts/python-test-integration.sh
 
+extension-integration-tests:
+	cp pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl test/extension-integration/
+	cp build/release/extension/python_udf/python_udf.duckdb_extension test/extension-integration/
+	cd test/extension-integration/ && \
+	docker build --build-arg EXTENSION_VERSION=0.1.1 --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
+	docker run --rm --interactive extension-integration-tests
+
+
 # Main tests
 test: test_release
 
@@ -80,11 +88,11 @@ test_legacy_debug:
 
 test_release:
 	python3 udfs.py
-	./build/release/test/unittest --test-dir . "[sql]"
+	PYTHONPATH=. ./build/release/test/unittest --test-dir . "[sql]"
 
 test_debug:
 	python3 udfs.py
-	ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
+	PYTHONPATH=. ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
 
 check-format:
 	find src/ -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -Werror --sort-includes=0 -style=file --dry-run

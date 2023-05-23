@@ -2,7 +2,7 @@
 import os, sys
 from github import Github
 
-token = os.environ["GITHUB_ACCESS_TOKEN"]
+token = os.environ.get("GITHUB_ACCESS_TOKEN")
 g = Github(token)
 
 def repos_for(username):
