@@ -55,16 +55,20 @@ extension-release:
 extension-debug:
 	cmake --build build/debug --config Debug
 
+# todo: make sure we use our desired python version
 python-ci: ./scripts/python-ci.sh
 	bash ./scripts/python-ci.sh
 
+# todo: make sure we use our desired python version
 python-release:
 	rm -f pythonpkgs/ducktables/dist/duck*
 	bash ./scripts/python-release.sh
 
+# todo: make sure we use our desired python version
 python-test-integration:
 	bash ./scripts/python-test-integration.sh
 
+# todo: detect our python version and push it into the container
 extension-integration-tests:
 	cp pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/python_udf/python_udf.duckdb_extension test/extension-integration/
