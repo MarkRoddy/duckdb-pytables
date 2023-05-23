@@ -80,6 +80,5 @@ runs:
       shell: bash
       run: |
         ldd --version ldd
-        python3.9 --version
         git --version
         git log -1 --format=%h
