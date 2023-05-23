@@ -70,7 +70,7 @@ extension-integration-tests:
 	cp build/release/extension/python_udf/python_udf.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
 	docker build --build-arg EXTENSION_VERSION=0.1.1 --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
-	docker run --tty --rm --interactive extension-integration-tests
+	docker run --rm --interactive extension-integration-tests
 
 
 # Main tests
