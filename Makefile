@@ -5,6 +5,8 @@ all: release
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJ_DIR := $(dir $(MKFILE_PATH))
 
+PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
+
 OSX_BUILD_UNIVERSAL_FLAG=
 ifeq (${OSX_BUILD_UNIVERSAL}, 1)
 	OSX_BUILD_UNIVERSAL_FLAG=-DOSX_BUILD_UNIVERSAL=1
@@ -57,23 +59,26 @@ extension-debug:
 
 # todo: make sure we use our desired python version
 python-ci: ./scripts/python-ci.sh
-	bash ./scripts/python-ci.sh
+	bash ./scripts/python-ci.sh $(PYTHON_VERSION)
 
 # todo: make sure we use our desired python version
 python-release:
 	rm -f pythonpkgs/ducktables/dist/duck*
-	bash ./scripts/python-release.sh
+	bash ./scripts/python-release.sh $(PYTHON_VERSION)
 
 # todo: make sure we use our desired python version
 python-test-integration:
-	bash ./scripts/python-test-integration.sh
+	bash ./scripts/python-test-integration.sh $(PYTHON_VERSION)
 
 # todo: detect our python version and push it into the container
 extension-integration-tests:
 	cp pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/python_udf/python_udf.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
-	docker build --build-arg EXTENSION_VERSION=0.1.1 --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
+	echo "Python: $(PYTHON_VERSION)" && \
+	docker build --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
+	  --build-arg EXTENSION_VERSION=0.1.1 \
+	  --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
 	docker run --rm --interactive extension-integration-tests
 
 

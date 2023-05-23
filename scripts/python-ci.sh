@@ -2,15 +2,20 @@
 
 set -e;
 
+if [ 0 == $# ]; then
+    echo "usage: $0 python-version";
+    exit 1;
+fi
+
 echo "Entering python land..."
 cd pythonpkgs/
 
 echo "Checking that we have a python..."
-which python3.9
+which python$1;
 
 # Create a virtual environment
 echo "Creating our virtual environment"
-python3.9 -m venv myenv
+python$1 -m venv myenv
 echo "Sourcing the env"
 source myenv/bin/activate
 
