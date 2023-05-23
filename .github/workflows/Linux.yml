@@ -16,7 +16,7 @@ jobs:
       matrix:
         # Add commits/tags to build against other DuckDB versions
         duckdb_version: ['<submodule_version>']
-        python_version: ['3.9']
+        python_version: ['3.9', '3.10', '3.11']
         # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
         arch: ['linux_amd64']
         include:
@@ -59,8 +59,12 @@ jobs:
         path: |
           build/
           ~/.ccache/
-        key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
-        
+        key: duckdb-v${{ matrix.duckdb_version }}-python-${{matrix.python_version}}-${{ matrix.arch }}
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '${{ matrix.python_version }}'
+
     - name: Checkout DuckDB to version
       if: ${{ matrix.duckdb_version != '<submodule_version>'}}
       run: |
@@ -131,10 +135,11 @@ jobs:
         
     - uses: actions/upload-artifact@v2
       with:
-        name: ${{matrix.arch}}-extensions
+        name: duckdb-v${{ matrix.duckdb_version }}-python${{matrix.python_version}}-${{ matrix.arch }}
         path: |
           build/release/extension/python_udf/python_udf.duckdb_extension
 
+    # todo: create separate files for separate duckdb/python/arch versions
     - uses: "marvinpinto/action-automatic-releases@latest"
       if: github.ref == 'refs/heads/main'
       with:
@@ -144,7 +149,8 @@ jobs:
         title: "Automatic Build"
         files: |
           build/release/extension/python_udf/python_udf.duckdb_extension
-          
+
+    # todo: Update deploy script to take + use a Python version
     - name: Deploy
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_ID }}
