@@ -60,7 +60,7 @@ release:
 	echo "Python3_ROOT_DIR: ${Python3_ROOT_DIR}" && \
 	echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}" && \
 	mkdir -p build/release && \
-	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Release ${BUILD_FLAGS} -S ./duckdb/ -B build/release && \
+	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} ${CIFLAGS} -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Release ${BUILD_FLAGS} -S ./duckdb/ -B build/release && \
 	cmake ${CIFLAGS} --build build/release --config Release
 
 extension-release:
