@@ -5,7 +5,15 @@ all: release
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJ_DIR := $(dir $(MKFILE_PATH))
 
+
+# CI Specific Settings
 PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
+
+# Check if Github Actions provided Python (in non-default location) is present
+CIPYTHON="/__t/Python/$(PYTHON_VERSION)/x64"
+ifneq ($(wildcard $(CIPYTHON)/*),)
+	CIFLAGS := "$(CIFLAGS) -DPython3_ROOT_DIR=$(CIPYTHON)/"
+endif
 
 OSX_BUILD_UNIVERSAL_FLAG=
 ifeq (${OSX_BUILD_UNIVERSAL}, 1)
@@ -44,12 +52,13 @@ clean:
 debug:
 	mkdir -p  build/debug && \
 	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DENABLE_SANITIZER=TRUE -DFORCE_ASSERT=TRUE -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Debug ${BUILD_FLAGS} -S ./duckdb/ -B build/debug && \
-	cmake --build build/debug --config Debug
+	cmake ${CI_FLAGS} --build build/debug --config Debug
 
 release:
+	echo "CI_FLAGS: ${CI_FLAGS}" && \
 	mkdir -p build/release && \
 	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Release ${BUILD_FLAGS} -S ./duckdb/ -B build/release && \
-	cmake -DPython3_ROOT_DIR=/__t/Python/${{ matrix.python-version }}/x64 --build build/release --config Release
+	cmake ${CI_FLAGS} --build build/release --config Release
 
 extension-release:
 	cmake --build build/release --config Release
