@@ -14,8 +14,6 @@ PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
 # location so CMake will be unable to find it w/o some prodding.
 ifneq ($(Python3_ROOT_DIR),)
 	CIFLAGS="$(CIFLAGS) -DPython3_ROOT_DIR=$(Python3_ROOT_DIR)/"
-else
-	CIFLAGS="Hit the else"
 endif
 
 OSX_BUILD_UNIVERSAL_FLAG=
@@ -55,7 +53,7 @@ clean:
 debug:
 	mkdir -p  build/debug && \
 	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DENABLE_SANITIZER=TRUE -DFORCE_ASSERT=TRUE -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Debug ${BUILD_FLAGS} -S ./duckdb/ -B build/debug && \
-	cmake ${CI_FLAGS} --build build/debug --config Debug
+	cmake ${CIFLAGS} --build build/debug --config Debug
 
 release:
 	echo "CI_FLAGS: ${CI_FLAGS}" && \
