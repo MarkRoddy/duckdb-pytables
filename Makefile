@@ -14,6 +14,8 @@ PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
 # location so CMake will be unable to find it w/o some prodding.
 ifneq ($(Python3_ROOT_DIR),)
 	CIFLAGS="$(CIFLAGS) -DPython3_ROOT_DIR=$(Python3_ROOT_DIR)/"
+else
+	CIFLAGS="Hit the else"
 endif
 
 OSX_BUILD_UNIVERSAL_FLAG=
