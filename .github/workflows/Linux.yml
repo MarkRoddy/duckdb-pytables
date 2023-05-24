@@ -11,9 +11,8 @@ jobs:
   linux:
     name: Linux Release
     runs-on: ubuntu-latest
-    container:
-      image: quay.io/pypa/manylinux2014_x86_64
-    container: ${{ matrix.container }}
+    container: quay.io/pypa/manylinux2014_x86_64
+    # container: ${{ matrix.container }}
     strategy:
       matrix:
         # Add commits/tags to build against other DuckDB versions
