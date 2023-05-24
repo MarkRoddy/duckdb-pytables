@@ -9,10 +9,11 @@ PROJ_DIR := $(dir $(MKFILE_PATH))
 # CI Specific Settings
 PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
 
-# Check if Github Actions provided Python (in non-default location) is present
-CIPYTHON="/__t/Python/$(PYTHON_VERSION)/x64"
-ifneq ($(wildcard $(CIPYTHON)/*),)
-	CIFLAGS := "$(CIFLAGS) -DPython3_ROOT_DIR=$(CIPYTHON)/"
+# Check if Github Actions provided Python is present. We need to do some
+# wiring up if this is the case because GA installs python in a "nonstandard"
+# location so CMake will be unable to find it w/o some prodding.
+ifneq ($(Python3_ROOT_DIR),)
+	CIFLAGS := "$(CIFLAGS) -DPython3_ROOT_DIR=$(Python3_ROOT_DIR)/"
 endif
 
 OSX_BUILD_UNIVERSAL_FLAG=
