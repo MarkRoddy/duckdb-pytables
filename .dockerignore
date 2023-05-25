@@ -1,0 +1,6 @@
+stuff/*
+build/*
+pythonpkgs/myenv/*
+# duckdb/*
+duckdb/.git/*
+.git/*
