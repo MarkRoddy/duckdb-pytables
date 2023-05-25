@@ -116,6 +116,10 @@ jobs:
         openssl: 1
         arch: ${{ matrix.arch }}
 
+    # Make sure subsequent steps can find our OpenSSL installation
+    - name: Set environment
+      run: echo "LD_LIBRARY_PATH=/usr/local/ssl/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+    
       # Build extension
     - name: Build extension
       env:

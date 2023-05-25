@@ -13,10 +13,15 @@ PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
 # wiring up if this is the case because GA installs python in a "nonstandard"
 # location so CMake will be unable to find it w/o some prodding.
 ifneq ($(Python3_ROOT_DIR),)
+	# Point to Github Action's 'setup-python' installation
 	CIFLAGS := $(CIFLAGS) -DPython3_ROOT_DIR=$(Python3_ROOT_DIR)/
 	CIFLAGS := $(CIFLAGS) -DPython_INCLUDE_DIRS=$(Python3_ROOT_DIR)/include/python$(PYTHON_VERSION)/
 	CIFLAGS := $(CIFLAGS) -DPython_LIBRARIES=$(Python3_ROOT_DIR)//lib/libpython$(PYTHON_VERSION).so
 
+	# Point to our version of OpenSSL that DuckDB requires
+	CIFLAGS := $(CIFLAGS) -DOPENSSL_ROOT_DIR=/usr/local/ssl
+	CIFLAGS := $(CIFLAGS) -DOPENSSL_LIBRARIES=/usr/local/ssl/lib
+	CIFLAGS := $(CIFLAGS) -DOPENSSL_INCLUDE_DIR=/usr/local/ssl/include 
 endif
 
 OSX_BUILD_UNIVERSAL_FLAG=
