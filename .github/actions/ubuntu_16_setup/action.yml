@@ -38,7 +38,7 @@ runs:
         cmake --version
 
     - name: Install OpenSSL 1.1.1
-      if: ${{ inputs.openssl == 1 && inputs.aarch64_cross_compile == 0}}
+      if: ${{ inputs.openssl && !inputs.aarch64_cross_compile}}
       shell: bash
       run: |
         wget https://www.openssl.org/source/openssl-1.1.1c.tar.gz
