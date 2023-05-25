@@ -75,6 +75,7 @@ jobs:
       run: |
         ln -s /opt/_internal/cpython-${{ matrix.python_version }}.* /opt/_internal/cpython-${{ matrix.python_version }}
         ln -s /opt/_internal/cpython-${{ matrix.python_version }}/bin/python3 /usr/bin/python3
+        echo "/opt/_internal/cpython-${{ matrix.python_version }}/bin/" >> $GITHUB_PATH
         
     - name: Tell me about your python install
       # Debugging step, comment to re-enable
