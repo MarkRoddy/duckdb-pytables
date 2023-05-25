@@ -90,8 +90,8 @@ jobs:
         cd duckdb
         git checkout ${{ matrix.duckdb_version }}
 
-    - if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
-      uses: ./.github/actions/centos_7_setup
+    - uses: ./.github/actions/centos_7_setup
+      # if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
       with:
         openssl: 0
 
