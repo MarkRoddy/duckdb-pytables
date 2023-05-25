@@ -3,10 +3,10 @@ description: "Setup an Ubuntu 16 docker container with the required libraries"
 inputs:
   openssl:
     description: 'OpenSSL'
-    default: 0
+    default: false
   aarch64_cross_compile:
     description: 'Install dependencies for aarch64 cross-compiling'
-    default: 0
+    default: false
 runs:
   using: "composite"
   steps:
@@ -21,7 +21,7 @@ runs:
 
     - name: Install
       shell: bash
-      if: ${{ inputs.aarch64_cross_compile == 1 }}
+      if: ${{ inputs.aarch64_cross_compile }}
       run: |
         apt-get install -y -qq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
@@ -38,7 +38,7 @@ runs:
         cmake --version
 
     - name: Install OpenSSL 1.1.1
-      if: ${{ inputs.openssl && !inputs.aarch64_cross_compile}}
+      if: ${{ inputs.openssl && !inputs.aarch64_cross_compile }}
       shell: bash
       run: |
         wget https://www.openssl.org/source/openssl-1.1.1c.tar.gz
@@ -51,7 +51,7 @@ runs:
         ldconfig -v
 
     - name: Install OpenSSL for Cross compiling
-      if: ${{ inputs.openssl == 1 && inputs.aarch64_cross_compile == 1}}
+      if: ${{ inputs.openssl && inputs.aarch64_cross_compile }}
       shell: bash
       run: |
         mkdir -p build/openssl
