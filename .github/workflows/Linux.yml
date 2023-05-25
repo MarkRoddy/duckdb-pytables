@@ -44,8 +44,8 @@ jobs:
 
     - name: Setup Python ${{ matrix.python_version }}
       run: |
-        apt-get install -y -qq python${{ python_version }}-dev
-        
+        apt-get install -y -qq python${{ matrix.python_version }}-dev
+  
     # - name: Set up Python ${{ matrix.python_version }}
     #   uses: actions/setup-python@v4
     #   with:
