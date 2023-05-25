@@ -36,7 +36,7 @@ jobs:
     env:
       GEN: ninja
       PYTHON_VERSION: ${{ matrix.python_version }}
-      Python3_ROOT_DIR: /opt/_internal/cpython-${{ matrix.python_version }}/
+      # Python3_ROOT_DIR: /opt/_internal/cpython-${{ matrix.python_version }}/
 
     steps:
     - name: Install required ubuntu packages
@@ -81,6 +81,7 @@ jobs:
         python-version: '${{ matrix.python_version }}'
 
     - name: Setup Python
+      if: ${{ 1==0 }}
       # Create a non-patch version symlink so we don't need to constantly upgrade every time a
       # new patch release comes out. Also, symlink to python3. We might want that?
       run: |
