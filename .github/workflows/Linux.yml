@@ -114,7 +114,7 @@ jobs:
       uses: ./.github/actions/ubuntu_16_setup
       with:
         openssl: 1
-        aarch64_cross_compile: ${{ matrix.arch }}
+        arch: ${{ matrix.arch }}
 
       # Build extension
     - name: Build extension
