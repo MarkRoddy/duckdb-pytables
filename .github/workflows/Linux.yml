@@ -11,8 +11,8 @@ jobs:
   linux:
     name: Linux Release
     runs-on: ubuntu-latest
-    container: quay.io/pypa/manylinux2014_x86_64
-    # container: ${{ matrix.container }}
+    # container: quay.io/pypa/manylinux2014_x86_64
+    container: ${{ matrix.container }}
     strategy:
       matrix:
         # Add commits/tags to build against other DuckDB versions
@@ -25,7 +25,8 @@ jobs:
         arch: ['linux_amd64']
         include:
           - arch: 'linux_amd64'
-            container: 'ubuntu:20.04'
+            # container: 'ubuntu:20.04'
+            container: 'ubuntu:16.04'
           # - arch: 'linux_amd64'
           #   container: 'ubuntu:16.04'
           # - arch: 'linux_arm64'
@@ -65,7 +66,7 @@ jobs:
         key: duckdb-v${{ matrix.duckdb_version }}-python-${{matrix.python_version}}-${{ matrix.arch }}
 
     - uses: actions/setup-python@v4
-      if: ${{ 1==0 }}
+      # if: ${{ 1==0 }}
       with:
         python-version: '${{ matrix.python_version }}'
 
@@ -92,13 +93,13 @@ jobs:
         git checkout ${{ matrix.duckdb_version }}
 
     - uses: ./.github/actions/centos_7_setup
-      # if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
+      if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
       with:
         openssl: 1
 
     - name: Ubuntu Stuff
-      # if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
-      if: ${{ 0 == 1 }}
+      if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
+      # if: ${{ 0 == 1 }}
       uses: ./.github/actions/ubuntu_16_setup
       with:
         aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
