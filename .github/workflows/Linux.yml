@@ -113,6 +113,7 @@ jobs:
       # if: ${{ 0 == 1 }}
       uses: ./.github/actions/ubuntu_16_setup
       with:
+        openssl: 1
         aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
 
       # Build extension
