@@ -35,7 +35,11 @@ static void LoadInternal(DatabaseInstance &instance) {
 	// Initialize the Python interpreter
 	Py_Initialize();
 
-	void *libpython = dlopen(PYTHON_LIB_NAME, RTLD_NOW | RTLD_GLOBAL);
+        const char* clibpath = std::getenv("LIBPYTHONSO_PATH");
+        if (!clibpath) {
+          clibpath = PYTHON_LIB_NAME;
+        }
+	void *libpython = dlopen(clibpath, RTLD_NOW | RTLD_GLOBAL);
 	if (!libpython) {
 		std::cerr << "Failed to dyanmically load your libpython shared library: " << PYTHON_LIB_NAME
 		          << ". You may see errors about missing symbols." << std::endl;
