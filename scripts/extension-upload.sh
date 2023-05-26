@@ -7,24 +7,25 @@
 # <architecture>        : Architecture target of the extension binary
 # <s3_bucket>           : S3 bucket to upload to
 # <copy_to_latest>      : Set this as the latest version ("true" / "false", default: "false")
+# <python_version>      : Version of Python the extension was built agains
 
 set -e
 
-if [ 6 != $# ]; then
+if [ 7 != $# ]; then
     # Display the usage comments above, dropping other comments and the shebang
     cat $0 |grep '^#'|head -n 8|tail -n 7;
     exit 1;
 fi
-
+PYVERSION="$7";
 ext="build/release/extension/$1/$1.duckdb_extension"
 
 # compress extension binary
 gzip < $ext > "$1.duckdb_extension.gz"
 
 # upload compressed extension binary to S3
-aws s3 cp $1.duckdb_extension.gz s3://$5/$1/$2/$3/$4/$1.duckdb_extension.gz --acl public-read
+aws s3 cp $1.duckdb_extension.gz s3://$5/$1/$2/$PYVERSION/$3/$4/$1.duckdb_extension.gz --acl public-read
 
 if [ "$6" = 'true' ]; then
-  aws s3 cp $1.duckdb_extension.gz s3://$5/$1/latest/$3/$4/$1.duckdb_extension.gz --acl public-read
+  aws s3 cp $1.duckdb_extension.gz s3://$5/$1/latest/$PYVERSION/$3/$4/$1.duckdb_extension.gz --acl public-read
 fi
 # also uplo
