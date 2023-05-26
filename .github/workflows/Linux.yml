@@ -31,15 +31,23 @@ jobs:
           #   container: 'quay.io/pypa/manylinux2014_x86_64'
     env:
       GEN: ninja
-      DEFAULT_DDB_VERSION: '0.8.0'
-      # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
-      # repo is pinned to". That doesn't help when we're building an artifact name that includes
-      # the version of duckdb we've pinned against. So we create a separate variable here that will
-      # contain the actual version number. Note it requires the pinned version in the repo to match
-      # the above version number. Sorry future me who will def forget to do so.
-      DDB_VERSION: ${{ if '<submodule_version>' == matrix.duckdb_version env.DEFAULT_DDB_VERSION  else  matrix.duckdb_version endif }}
+    steps:      
+    # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
+    # repo is pinned to". That doesn't help when we're building an artifact name that includes
+    # the version of duckdb we've pinned against. So we create a separate variable here that will
+    # contain the actual version number.
+    - name: Extract + Export DuckDB Pinned Version if in Use
+      if: '<submodule_version>' == matrix.duckdb_version
+      run: |
+        export DUCKDB_VERSION=`git tag --points-at HEAD`
+        export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
+        echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
       
-    steps:
+    - name: Export DuckDB if Ignoring Pinned Version
+      if: '<submodule_version>' != matrix.duckdb_version
+      run: |
+        echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
+
     - name: Install required ubuntu packages
       if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
       run: |
