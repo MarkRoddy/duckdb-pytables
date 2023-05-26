@@ -2,21 +2,22 @@ name: Linux
 on: [push]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 defaults:
   run:
     shell: bash
 
 jobs:
-  linux:
-    name: Linux Release
+  linux-build:
+    name: Linux Build
     runs-on: ubuntu-latest
     container: ${{ matrix.container }}
     strategy:
       matrix:
         # Add commits/tags to build against other DuckDB versions
         duckdb_version: ['<submodule_version>']
-        python_version: ['3.9']
+        # python_version: ['3.8', '3.9', '3.10', '3.11']
+        python_version: ['3.8', '3.9']
         # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
         arch: ['linux_amd64']
         include:
@@ -30,18 +31,37 @@ jobs:
           #   container: 'quay.io/pypa/manylinux2014_x86_64'
     env:
       GEN: ninja
-
     steps:
+      # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
+      # repo is pinned to". That doesn't help when we're building an artifact name that includes
+      # the version of duckdb we've pinned against. So we create a separate variable here that will
+      # contain the actual version number.
+    - name: Extract + Export DuckDB Pinned Version if in Use
+      if: ${{ '<submodule_version>' == matrix.duckdb_version }}
+      run: |
+        export DUCKDB_VERSION=`git tag --points-at HEAD`
+        export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
+        echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
+      
+    - name: Export DuckDB if Ignoring Pinned Version
+      if: ${{ '<submodule_version>' != matrix.duckdb_version }}
+      run: |
+        echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
+
     - name: Install required ubuntu packages
       if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
       run: |
         apt-get update -y -qq
         apt-get install -y -qq software-properties-common
-        add-apt-repository ppa:git-core/ppa
+        add-apt-repository ppa:deadsnakes/ppa
         apt-get update -y -qq
         apt-get install -y -qq ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client git clang-format libasan6 ccache docker.io
         git config --global --add safe.directory '*'
 
+    - name: Setup Python ${{ matrix.python_version }}
+      run: |
+        apt-get install -y -qq python${{ matrix.python_version }}-dev
+  
     # - name: Set up Python ${{ matrix.python_version }}
     #   uses: actions/setup-python@v4
     #   with:
@@ -131,9 +151,20 @@ jobs:
         
     - uses: actions/upload-artifact@v2
       with:
-        name: ${{matrix.arch}}-extensions
+        name: ddb${{ env.DDB_VERSION }}-py${{ matrix.python_version }}-extension-${{ matrix.arch }}
         path: |
-          build/release/extension/python_udf/python_udf.duckdb_extension
+          build/release/extension/duckdb_udf/*.duckdb_extension
+
+    - uses: actions/upload-artifact@v2
+      with:
+        # This is a source only package so we are being a bit more descriptive than is really necessary,
+        # but I'm not sure what will happen if the matrix build were to upload multiple artifacts w/the
+        # same name.
+        name: ducktables-py${{ matrix.python_version }}-${{ matrix.arch }}-ddb${{ env.DDB_VERSION }}
+        # todo: this will fail the next time we upgrade the python package version because it's
+        # hardcoded below.
+        path: |
+          pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl
 
     - uses: "marvinpinto/action-automatic-releases@latest"
       if: github.ref == 'refs/heads/main'
@@ -144,7 +175,7 @@ jobs:
         title: "Automatic Build"
         files: |
           build/release/extension/python_udf/python_udf.duckdb_extension
-          
+
     - name: Deploy
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_ID }}
@@ -163,11 +194,11 @@ jobs:
         elif [[ "$GITHUB_REF" =~ ^(refs/tags/v.+)$ ]] ; then
           echo "Uploading release tagged $GITHUB_REF";
           python3 -m pip install pip awscli
-          ./scripts/extension-upload.sh python_udf ${{ github.ref_name }} $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME true
+          ./scripts/extension-upload.sh python_udf ${{ github.ref_name }} $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME true python${{ matrix.python_version }}
         elif [[ "$GITHUB_REF" =~ ^(refs/heads/main)$ ]] ; then
           echo "Uploading tip of main branch $GITHUB_REF";
           python3 -m pip install pip awscli
-          ./scripts/extension-upload.sh python_udf `git log -1 --format=%h` $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME false
+          ./scripts/extension-upload.sh python_udf `git log -1 --format=%h` $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME false python${{ matrix.python_version }}
         else
           echo "Build is for non tag on a branch other than main, skipping"
         fi

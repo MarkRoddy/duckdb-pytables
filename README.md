@@ -52,6 +52,16 @@ Please see the table below for a further breakdown of each of the named argument
 | columns        | Required. A struct mapping column names to expected DuckDB data types.|
 | kwargs         | Optional. A struct mapping named arguments to be passed to the python function. In python, this is passed as if you called `func(**kwargs)`. |
 
+## Writing Python Functions for Use as Tables
+Python functions can accept an arbitrary number of primitive data which can be invoked in a positional manner.
+
+These functions must return an iterator (or use the 'yield' syntax). Each value in this iterator will represent
+a single row in the database table. As such, the number of values in each row must be consistent across all rows,
+and it must match the number of columns specified when the function is invoked from SQL. Additionally, the data
+type for each value should be convertable to the column data type specified. If the conversion is not possible a
+null value will be substituted.
+    
+
 # Scalar Functions
 The `pycall` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
 
@@ -133,47 +143,24 @@ Note these are not inherent limitations that can not be overcome, but presently 
 * Binaries only available for Linux x64 architecture. Builds for OSX and Windows coming soon.
 * Scalar functions only support returning `VARCHAR` values at this time.
 * Not all DuckDB and Python datatypes have been fully mapped. Please file an issue if you find one unsupported.
+* Builds only available for Python 3.8 and Python 3.9 at this time.
 
 # Installation and Usage
 
-First, [install DuckDB](https://duckdb.org/docs/installation/) v0.8.0 or above.
+First, [install DuckDB](https://duckdb.org/docs/installation/) v0.8.0 or above. Determine the major/minor version of python you'll be using, for instance Python 3.10. In this case you would use `3.10` where PYTHON_VERSION is referenced below.
 
-Next, start the DuckDB shell using the 'unsigned' option. Note that depending on your choosen environment (commandline, Python, etc) the manner in which you specify this will vary. A few examples are provided in the next section below.
-
-Run the following commands to install the extension and activate it:
-
-```sql
-SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/python_udf/latest';
-INSTALL python_udf;
-LOAD python_udf;
-```
-
-## Writing Python Functions for Use as Tables
-Python functions can accept an arbitrary number of primitive data which can be invoked in a positional manner.
-
-These functions must return an iterator (or use the 'yield' syntax). Each value in this iterator will represent
-a single row in the database table. As such, the number of values in each row must be consistent across all rows,
-and it must match the number of columns specified when the function is invoked from SQL. Additionally, the data
-type for each value should be convertable to the column data type specified. If the conversion is not possible a
-null value will be substituted.
-
-
-## Setting the Unsigned Option
-CLI:
+Next, start the DuckDB shell using the 'unsigned' option. 
 ```shell
 duckdb -unsigned
 ```
 
-Python:
-```python
-con = duckdb.connect(':memory:', config={'allow_unsigned_extensions' : 'true'})
-```
+Run the following commands in the DuckDB REPL to install the extension and activate it:
 
-NodeJS:
-```js
-db = new duckdb.Database(':memory:', {"allow_unsigned_extensions": "true"});
+```sql
+SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/python_udf/latest/python${PYTHON_VERSION}';
+INSTALL python_udf;
+LOAD python_udf;
 ```
-    
 
 # Development
 Clone the repo being sure to use the `recurse-submodules` option:
