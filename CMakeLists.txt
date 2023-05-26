@@ -6,7 +6,8 @@ set(TARGET_NAME python_udf)
 set(EXTENSION_NAME ${TARGET_NAME}_extension)
 project(${TARGET_NAME})
 
-find_package(Python REQUIRED COMPONENTS Development)
+set(PYTHON_VERSION "3.8" CACHE STRING "Desired Python version")
+find_package(Python ${PYTHON_VERSION} EXACT COMPONENTS Development)
 get_filename_component(PYTHON_LIB_NAME ${Python_LIBRARIES} NAME)
 
 configure_file(src/include/config.h.in config.h @ONLY)
