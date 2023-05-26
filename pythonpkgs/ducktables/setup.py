@@ -1,5 +1,8 @@
 from setuptools import setup, find_packages
 
+
+with open('version.txt') as f:
+    version_str = f.read().strip()
 setup(
     name='ducktables',
     version='0.1.2',
