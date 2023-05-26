@@ -66,6 +66,7 @@ python-release:
 python-test-integration:
 	bash ./scripts/python-test-integration.sh
 
+# Tests a build of the extension against a download of DuckDB
 extension-integration-tests:
 	cp pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/python_udf/python_udf.duckdb_extension test/extension-integration/
@@ -73,6 +74,11 @@ extension-integration-tests:
 	docker build --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --build-arg EXTENSION_VERSION=0.1.1 --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
 	docker run --rm --interactive extension-integration-tests
 
+# Test the latest release of the extension against a download of DuckDB
+post-release-integration:
+	if [ -z "$(RELEASE_SHA)" ]; then echo "Please specify a RELEASE_SHA to test against;"; exit 1; fi
+	cd test/post-release-integration/ && \
+	docker build --build-arg RELEASE_SHA=$(RELEASE_SHA) --build-arg PYTHON_VERSION=3.9 --build-arg EXTENSION_VERSION=0.1.1 --build-arg DUCKDB_VERSION=0.8.0 -t post-release-integration . && docker run --rm --interactive post-release-integration
 
 # Main tests
 test: test_release
