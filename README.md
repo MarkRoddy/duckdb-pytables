@@ -143,6 +143,7 @@ Note these are not inherent limitations that can not be overcome, but presently 
 * Binaries only available for Linux x64 architecture. Builds for OSX and Windows coming soon.
 * Scalar functions only support returning `VARCHAR` values at this time.
 * Not all DuckDB and Python datatypes have been fully mapped. Please file an issue if you find one unsupported.
+* Builds only available for Python 3.8 and Python 3.9 at this time.
 
 # Installation and Usage
 
