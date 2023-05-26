@@ -153,7 +153,7 @@ jobs:
       with:
         name: ddb${{ env.DDB_VERSION }}-py${{ matrix.python_version }}-extension-${{ matrix.arch }}
         path: |
-          build/release/extension/duckdb_udf/*.duckdb_extension
+          build/release/extension/python_udf/python_udf.duckdb_extension
 
     - uses: actions/upload-artifact@v2
       with:
