@@ -31,163 +31,170 @@ jobs:
           #   container: 'quay.io/pypa/manylinux2014_x86_64'
     env:
       GEN: ninja
-    steps:      
-      # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
-      # repo is pinned to". That doesn't help when we're building an artifact name that includes
-      # the version of duckdb we've pinned against. So we create a separate variable here that will
-      # contain the actual version number.
-      - name: Extract + Export DuckDB Pinned Version if in Use
-        if: '<submodule_version>' == matrix.duckdb_version
-        run: |
-          export DUCKDB_VERSION=`git tag --points-at HEAD`
-          export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
-          echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
+    steps:
+    - name: Extract + Export DuckDB Pinned Version if in Use
+      if: '<submodule_version>' == matrix.duckdb_version
+      run: |
+        export DUCKDB_VERSION=`git tag --points-at HEAD`
+        export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
+        echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
       
-      - name: Export DuckDB if Ignoring Pinned Version
-        if: '<submodule_version>' != matrix.duckdb_version
-        run: |
-          echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
+    - name: Export DuckDB if Ignoring Pinned Version
+      if: '<submodule_version>' != matrix.duckdb_version
+      run: |
+        echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
 
-      - name: Install required ubuntu packages
-        if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
-        run: |
-          apt-get update -y -qq
-          apt-get install -y -qq software-properties-common
-          add-apt-repository ppa:deadsnakes/ppa
-          apt-get update -y -qq
-          apt-get install -y -qq ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client git clang-format libasan6 ccache docker.io
-          git config --global --add safe.directory '*'
+    - name: Install required ubuntu packages
+      if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
+      run: |
+        apt-get update -y -qq
+        apt-get install -y -qq software-properties-common
+        add-apt-repository ppa:deadsnakes/ppa
+        apt-get update -y -qq
+        apt-get install -y -qq ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client git clang-format libasan6 ccache docker.io
+        git config --global --add safe.directory '*'
 
-      - name: Setup Python ${{ matrix.python_version }}
-        run: |
-          apt-get install -y -qq python${{ matrix.python_version }}-dev
+    - name: Setup Python ${{ matrix.python_version }}
+      run: |
+        apt-get install -y -qq python${{ matrix.python_version }}-dev
   
-      # - name: Set up Python ${{ matrix.python_version }}
-      #   uses: actions/setup-python@v4
-      #   with:
-      #     python-version: ${{ matrix.python_version }}
+    # - name: Set up Python ${{ matrix.python_version }}
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: ${{ matrix.python_version }}
 
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: 'true'
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: 'true'
 
-      - name: Restore cached build artifacts
-        id: cache-restore
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            build/
-            ~/.ccache/
-          key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
+    - name: Restore cached build artifacts
+      id: cache-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          build/
+          ~/.ccache/
+        key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
         
-      - name: Checkout DuckDB to version
-        if: ${{ matrix.duckdb_version != '<submodule_version>'}}
-        run: |
-          cd duckdb
-          git checkout ${{ matrix.duckdb_version }}
+    - name: Checkout DuckDB to version
+      if: ${{ matrix.duckdb_version != '<submodule_version>'}}
+      run: |
+        cd duckdb
+        git checkout ${{ matrix.duckdb_version }}
 
-      - if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
-        uses: ./.github/actions/centos_7_setup
-        with:
-          openssl: 0
+    - if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
+      uses: ./.github/actions/centos_7_setup
+      with:
+        openssl: 0
 
-      - if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
-        uses: ./.github/actions/ubuntu_16_setup
-        with:
-          aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
+    - if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
+      uses: ./.github/actions/ubuntu_16_setup
+      with:
+        aarch64_cross_compile: ${{ matrix.arch == 'linux_arm64' && 1 }}
+
+    - name: Tell me about your python install
+      # Debugging step, comment to re-enable
+      if: 0 == 1
+      run: |
+        ls -ld /usr/include/python*
+        which python || echo "No 'python' executable"
+        which python3 || echo "No 'python3' executable"
+        python -V || echo "No 'python' executable"
+        python3 -V || echo "No 'python3' executable"
+        ls -l /usr/include/python3.9/*.h
       
       # Build extension
-      - name: Build extension
-        env:
-          GEN: ninja
-          STATIC_LIBCPP: 1
-          CC: ${{ matrix.arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
-          CXX: ${{ matrix.arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
-        run: |
-          make release
+    - name: Build extension
+      env:
+        GEN: ninja
+        STATIC_LIBCPP: 1
+        CC: ${{ matrix.arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
+        CXX: ${{ matrix.arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
+      run: |
+        make release
 
-      - name: Cache build artifacts
-        id: cache-save
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            build/
-            ~/.ccache/
-          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+    - name: Cache build artifacts
+      id: cache-save
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          build/
+          ~/.ccache/
+        key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
-      - name: Run Tests
-        if: ${{ matrix.duckdb_version != 'v0.7.1' }}
-        run: |
-          make test
+    - name: Run Tests
+      if: ${{ matrix.duckdb_version != 'v0.7.1' }}
+      run: |
+        make test
 
-      - name: Run Legacy Tests
-        if: ${{ matrix.duckdb_version == 'v0.7.1' }}
-        run: |
-          make test-legacy
+    - name: Run Legacy Tests
+      if: ${{ matrix.duckdb_version == 'v0.7.1' }}
+      run: |
+        make test-legacy
 
-      - name: Code Format Check
-        run: |
-          make check-format
+    - name: Code Format Check
+      run: |
+        make check-format
 
-      - name: Build / Test Python Libraries
-        run: |
-          make python-ci
+    - name: Build / Test Python Libraries
+      run: |
+        make python-ci
 
-      - name: Run Integration Tests
-        run: |
-          make extension-integration-tests
+    - name: Run Integration Tests
+      run: |
+        make extension-integration-tests
         
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ddb${{ env.DDB_VERSION }}-py${{ matrix.python_version }}-extension-${{ matrix.arch }}
-          path: |
-            build/release/extension/duckdb_udf/*.duckdb_extension
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ddb${{ env.DDB_VERSION }}-py${{ matrix.python_version }}-extension-${{ matrix.arch }}
+        path: |
+          build/release/extension/duckdb_udf/*.duckdb_extension
 
-      - uses: actions/upload-artifact@v2
-        with:
-          # This is a source only package so we are being a bit more descriptive than is really necessary,
-          # but I'm not sure what will happen if the matrix build were to upload multiple artifacts w/the
-          # same name.
-          name: ducktables-py${{ matrix.python_version }}-${{ matrix.arch }}-ddb${{ env.DDB_VERSION }}
-          # todo: this will fail the next time we upgrade the python package version because it's
-          # hardcoded below.
-          path: |
-            pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl
+    - uses: actions/upload-artifact@v2
+      with:
+        # This is a source only package so we are being a bit more descriptive than is really necessary,
+        # but I'm not sure what will happen if the matrix build were to upload multiple artifacts w/the
+        # same name.
+        name: ducktables-py${{ matrix.python_version }}-${{ matrix.arch }}-ddb${{ env.DDB_VERSION }}
+        # todo: this will fail the next time we upgrade the python package version because it's
+        # hardcoded below.
+        path: |
+          pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        if: github.ref == 'refs/heads/main'
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
-          prerelease: true
-          title: "Automatic Build"
-          files: |
-            build/release/extension/python_udf/python_udf.duckdb_extension
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      if: github.ref == 'refs/heads/main'
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Automatic Build"
+        files: |
+          build/release/extension/python_udf/python_udf.duckdb_extension
 
-      - name: Deploy
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
-          BUCKET_NAME: ${{ secrets.S3_BUCKET }}
-        run: |
-          git config --global --add safe.directory '*'
-          cd duckdb
-          git fetch --tags
-          export DUCKDB_VERSION=`git tag --points-at HEAD`
-          export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
-          cd ..
-          if [[ "$AWS_ACCESS_KEY_ID" == "" ]] ; then
-            echo 'No key set, skipping'
-          elif [[ "$GITHUB_REF" =~ ^(refs/tags/v.+)$ ]] ; then
-            echo "Uploading release tagged $GITHUB_REF";
-            python3 -m pip install pip awscli
-            ./scripts/extension-upload.sh python_udf ${{ github.ref_name }} $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME true python${{ matrix.python_version }}
-          elif [[ "$GITHUB_REF" =~ ^(refs/heads/main)$ ]] ; then
-            echo "Uploading tip of main branch $GITHUB_REF";
-            python3 -m pip install pip awscli
-            ./scripts/extension-upload.sh python_udf `git log -1 --format=%h` $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME false python${{ matrix.python_version }}
-          else
-            echo "Build is for non tag on a branch other than main, skipping"
-          fi
+    - name: Deploy
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_KEY }}
+        AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+        BUCKET_NAME: ${{ secrets.S3_BUCKET }}
+      run: |
+        git config --global --add safe.directory '*'
+        cd duckdb
+        git fetch --tags
+        export DUCKDB_VERSION=`git tag --points-at HEAD`
+        export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
+        cd ..
+        if [[ "$AWS_ACCESS_KEY_ID" == "" ]] ; then
+          echo 'No key set, skipping'
+        elif [[ "$GITHUB_REF" =~ ^(refs/tags/v.+)$ ]] ; then
+          echo "Uploading release tagged $GITHUB_REF";
+          python3 -m pip install pip awscli
+          ./scripts/extension-upload.sh python_udf ${{ github.ref_name }} $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME true python${{ matrix.python_version }}
+        elif [[ "$GITHUB_REF" =~ ^(refs/heads/main)$ ]] ; then
+          echo "Uploading tip of main branch $GITHUB_REF";
+          python3 -m pip install pip awscli
+          ./scripts/extension-upload.sh python_udf `git log -1 --format=%h` $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME false python${{ matrix.python_version }}
+        else
+          echo "Build is for non tag on a branch other than main, skipping"
+        fi
