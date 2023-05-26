@@ -70,7 +70,7 @@ extension-integration-tests:
 	cp pythonpkgs/ducktables/dist/ducktables-0.1.1-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/python_udf/python_udf.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
-	docker build --build-arg EXTENSION_VERSION=0.1.1 --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
+	docker build --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --build-arg EXTENSION_VERSION=0.1.1 --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
 	docker run --rm --interactive extension-integration-tests
 
 
