@@ -31,6 +31,7 @@ jobs:
           #   container: 'quay.io/pypa/manylinux2014_x86_64'
     env:
       GEN: ninja
+      PYTHON_VERSION: ${{ matrix.python_version }}
     steps:
       # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
       # repo is pinned to". That doesn't help when we're building an artifact name that includes
