@@ -40,8 +40,8 @@ static void LoadInternal(DatabaseInstance &instance) {
 		std::cerr << "Failed to dyanmically load your libpython shared library: PYTHON_LIB_NAME. You may see errors "
 		             "about missing symbols."
 		          << std::endl;
-                auto errMsg = dlerror();
-                std::cerr << "Error Details: " << errMsg << std::endl;
+		auto errMsg = dlerror();
+		std::cerr << "Error Details: " << errMsg << std::endl;
 	}
 	con.Commit();
 }
