@@ -5,7 +5,7 @@ all: release
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJ_DIR := $(dir $(MKFILE_PATH))
 PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
-EXTENSION_VERSION=$(strip $(cat pythonpkgs/ducktables/version.txt))
+EXTENSION_VERSION := $(shell cat pythonpkgs/ducktables/version.txt)
 
 OSX_BUILD_UNIVERSAL_FLAG=
 ifeq (${OSX_BUILD_UNIVERSAL}, 1)
