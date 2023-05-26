@@ -35,22 +35,13 @@ static void LoadInternal(DatabaseInstance &instance) {
 	// Initialize the Python interpreter
 	Py_Initialize();
 
-	/*
-	 Somewhat of  a hack to add CWD to the module search path. This is going to be a
-	 behavior most people expect (or at least I expected). Note the docs that explain
-	 module search path setup give some light on why they shouldn't be expected when
-	 embedding the interpreter:
-	 The first entry in the module search path is the directory that contains
-	 the input script, if there is one. Otherwise, the first entry is the current
-	 directory, which is the case when executing the interactive shell, a -c
-	 command, or -m module.
-	*/
-
 	void *libpython = dlopen(PYTHON_LIB_NAME, RTLD_NOW | RTLD_GLOBAL);
 	if (!libpython) {
 		std::cerr << "Failed to dyanmically load your libpython shared library: PYTHON_LIB_NAME. You may see errors "
 		             "about missing symbols."
 		          << std::endl;
+                auto errMsg = dlerror();
+                std::cerr << "Error Details: " << errMsg << std::endl;
 	}
 	con.Commit();
 }
