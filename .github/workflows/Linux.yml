@@ -16,8 +16,7 @@ jobs:
       matrix:
         # Add commits/tags to build against other DuckDB versions
         duckdb_version: ['<submodule_version>']
-        # python_version: ['3.8', '3.9', '3.10', '3.11']
-        python_version: ['3.8', '3.9', '3.10']
+        python_version: ['3.8', '3.9', '3.10', '3.11']
         # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
         arch: ['linux_amd64']
         include:
