@@ -158,7 +158,13 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 }
 
 PyObject *pyObjectToIterable(PyObject *py_object) {
-	PyObject *collections_module = PyImport_ImportModule("collections");
+  // Starting in python3.10, 'collections.Iterable' was moved to 'collections.abc.Iterable'.
+#if PYTHON_VERSION < 310
+  auto module = "collections";
+#else
+  auto module = "collections.abc";
+#endif
+	PyObject *collections_module = PyImport_ImportModule(module);
 	if (!collections_module) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to import collections module");
 		return nullptr;
