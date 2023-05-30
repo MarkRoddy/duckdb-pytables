@@ -35,26 +35,25 @@ static void LoadInternal(DatabaseInstance &instance) {
 	// Initialize the Python interpreter
 	Py_Initialize();
 
-
-        // Python C Extensions will encounter errors about missing symbols unless
-        // we eplicitly load the entire contents of the shared library. We do this
-        // with the dlopen() function which takes the path to the shared library. This
-        // can create some issues! Most notably where is the library and/or which one
-        // should we load. Our strategy at this time is to check if the user has
-        // supplied us a path to the file via an environment variable, look up the path
-        // via reflection on one of the preloaded symbols, and finally to "guess" the
-        // file name via some heuristics.
-        const char *libpath;
+	// Python C Extensions will encounter errors about missing symbols unless
+	// we eplicitly load the entire contents of the shared library. We do this
+	// with the dlopen() function which takes the path to the shared library. This
+	// can create some issues! Most notably where is the library and/or which one
+	// should we load. Our strategy at this time is to check if the user has
+	// supplied us a path to the file via an environment variable, look up the path
+	// via reflection on one of the preloaded symbols, and finally to "guess" the
+	// file name via some heuristics.
+	const char *libpath;
 	libpath = std::getenv("LIBPYTHONSO_PATH");
 	if (!libpath) {
-          // No env variable. Try examining a preloaded symbol.
-          Dl_info info;
-          if ( (dladdr((void*)Py_Initialize, &info)) && (info.dli_fname) ) {
-            libpath = info.dli_fname;
-          } else {
-            // Issue doing symbol lookup, fallback to our "guess"
-            libpath = PYTHON_LIB_NAME;
-          }
+		// No env variable. Try examining a preloaded symbol.
+		Dl_info info;
+		if ((dladdr((void *)Py_Initialize, &info)) && (info.dli_fname)) {
+			libpath = info.dli_fname;
+		} else {
+			// Issue doing symbol lookup, fallback to our "guess"
+			libpath = PYTHON_LIB_NAME;
+		}
 	}
 	void *libpython = dlopen(libpath, RTLD_NOW | RTLD_GLOBAL);
 	if (!libpython) {
