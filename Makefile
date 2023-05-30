@@ -83,6 +83,9 @@ post-release-integration:
 	cd test/post-release-integration/ && \
 	docker build --build-arg RELEASE_SHA=$(RELEASE_SHA) --build-arg PYTHON_VERSION=3.9 --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) --build-arg DUCKDB_VERSION=0.8.0 -t post-release-integration . && docker run --rm --interactive post-release-integration
 
+
+# Builds a container image with the specified version of Python suitable
+# for doing local development without having to install dependencies
 build-container-devel:
 	if [ -z "$(PYTHON_VERSION)" ]; then echo "Please specify a PYTHON_VERSION"; exit 1; fi
 	docker build \
@@ -92,7 +95,9 @@ build-container-devel:
 	  --build-arg USER=$(USER) \
 	  -t build-duckdb-python-py$(PYTHON_VERSION) .
 
-container-devel:
+# Assuming you've built the image above, runs a Docker container with your local source
+# checkout mounted and compiles the project.
+container-compile:
 	docker run --rm --interactive \
 	  --volume "$(HOME)/.ccache/:/home/$(USER)/.ccache" \
 	  --volume "$(shell pwd)/:$(shell pwd)" \
