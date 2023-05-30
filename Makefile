@@ -7,6 +7,8 @@ PROJ_DIR := $(dir $(MKFILE_PATH))
 PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
 EXTENSION_VERSION := $(shell cat pythonpkgs/ducktables/version.txt)
 
+DEVDIR := $(shell pwd)
+
 OSX_BUILD_UNIVERSAL_FLAG=
 ifeq (${OSX_BUILD_UNIVERSAL}, 1)
 	OSX_BUILD_UNIVERSAL_FLAG=-DOSX_BUILD_UNIVERSAL=1
@@ -80,6 +82,22 @@ post-release-integration:
 	if [ -z "$(RELEASE_SHA)" ]; then echo "Please specify a RELEASE_SHA to test against;"; exit 1; fi
 	cd test/post-release-integration/ && \
 	docker build --build-arg RELEASE_SHA=$(RELEASE_SHA) --build-arg PYTHON_VERSION=3.9 --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) --build-arg DUCKDB_VERSION=0.8.0 -t post-release-integration . && docker run --rm --interactive post-release-integration
+
+build-container-devel:
+	if [ -z "$(PYTHON_VERSION)" ]; then echo "Please specify a PYTHON_VERSION"; exit 1; fi
+	docker build \
+	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
+	  --build-arg UID=$(shell id -u) \
+	  --build-arg GID=$(shell id -g) \
+	  --build-arg USER=$(USER) \
+	  -t build-duckdb-python-py$(PYTHON_VERSION) .
+
+container-devel:
+	docker run --rm --interactive \
+	  --volume "$(HOME)/.ccache/:/home/$(USER)/.ccache" \
+	  --volume "$(shell pwd)/:$(shell pwd)" \
+	  build-duckdb-python-py$(PYTHON_VERSION) \
+	  bash -c "cd $(shell pwd) && bash scripts/docker-build-in-container.sh $(PYTHON_VERSION)"
 
 # Main tests
 test: test_release
