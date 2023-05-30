@@ -55,6 +55,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 			libpath = PYTHON_LIB_NAME;
 		}
 	}
+	std::cerr << "Attempting to load: " << libpath << std::endl;
 	void *libpython = dlopen(libpath, RTLD_NOW | RTLD_GLOBAL);
 	if (!libpython) {
 		std::cerr << "Failed to dyanmically load your libpython shared library: " << PYTHON_LIB_NAME
