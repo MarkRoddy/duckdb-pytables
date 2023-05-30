@@ -67,7 +67,14 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	int read_records = 0;
 	while ((read_records < STANDARD_VECTOR_SIZE) && (row = PyIter_Next(result))) {
 		auto iter_row = pyObjectToIterable(row);
-		if (!iter_row) {
+                // todo: acquire the GIL
+                if (PyErr_Occurred()) {
+                  PythonException err;
+                  // todo: release the GIL
+                  throw std::runtime_error(err.message);
+                }
+                // todo: release the GIL
+		else if (!iter_row) {
 			// todo: cleanup?
 			throw std::runtime_error("Error: Row record not iterable as expected");
 		} else {
