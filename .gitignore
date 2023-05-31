@@ -11,5 +11,5 @@ duckdb-*
 pythonpkgs/myenv/
 pythonpkgs/ducktables/dist/
 pythonpkgs/ducktables/ducktables.egg-info/
-test/extension-integration/python_udf.duckdb_extension
+test/extension-integration/pytables.duckdb_extension
 test/extension-integration/ducktables-*-py3-none-any.whl

@@ -24,7 +24,7 @@ RUN pip install  /tmp/ducktables-${EXTENSION_VERSION}-py3-none-any.whl && \
 
 # Install the UDF Extension, assumes the extension has been copied to our cwd
 RUN mkdir -p /root/.duckdb/extensions/v${DUCKDB_VERSION}/${OS_PLATFORM}/
-COPY python_udf.duckdb_extension /root/.duckdb/extensions/v${DUCKDB_VERSION}/${OS_PLATFORM}/
+COPY pytables.duckdb_extension /root/.duckdb/extensions/v${DUCKDB_VERSION}/${OS_PLATFORM}/
 
 COPY test-suite.sql /
 CMD bash -c 'cat test-suite.sql | duckdb -unsigned'

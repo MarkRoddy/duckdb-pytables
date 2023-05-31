@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 
 # Set extension name here
-set(TARGET_NAME python_udf)
+set(TARGET_NAME pytables)
 
 set(EXTENSION_NAME ${TARGET_NAME}_extension)
 project(${TARGET_NAME})

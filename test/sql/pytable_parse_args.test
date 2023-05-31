@@ -1,9 +1,9 @@
 # name: test/sql/pytable_parse_args.test
 # description: Confirm processing of function arguments
-# group: [python_udf]
+# group: [pytables]
 
 # Require statement will ensure this test is run with this extension loaded
-require python_udf
+require pytables
 
 
 # Compact invocation

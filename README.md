@@ -157,9 +157,9 @@ duckdb -unsigned
 Run the following commands in the DuckDB REPL to install the extension and activate it:
 
 ```sql
-SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/python_udf/latest/python${PYTHON_VERSION}';
-INSTALL python_udf;
-LOAD python_udf;
+SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/latest/python${PYTHON_VERSION}';
+INSTALL pytables;
+LOAD pytables;
 ```
 
 # Development
@@ -185,11 +185,11 @@ The main binaries that will be built are:
 ```sh
 ./build/release/duckdb
 ./build/release/test/unittest
-./build/release/extension/python_udf/python_udf.duckdb_extension
+./build/release/extension/pytables/pytables.duckdb_extension
 ```
 - `duckdb` is the binary for the duckdb shell with the extension code automatically loaded. 
 - `unittest` is the test runner of duckdb. Again, the extension is already linked into the binary.
-- `python_udf/python_udf.duckdb_extension` is the loadable binary as it would be distributed.
+- `pytables/pytables.duckdb_extension` is the loadable binary as it would be distributed.
 
 ## Running the extension
 To run the extension code, simply start the shell with `./build/release/duckdb`.
