@@ -2,7 +2,7 @@ name: Linux
 on: [push]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 defaults:
   run:
     shell: bash
@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     container: ${{ matrix.container }}
     strategy:
+      fail-fast: false
       matrix:
         # Add commits/tags to build against other DuckDB versions
         duckdb_version: ['<submodule_version>']
-        # python_version: ['3.8', '3.9', '3.10', '3.11']
-        python_version: ['3.8', '3.9']
+        python_version: ['3.8', '3.9', '3.10', '3.11']
         # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
         arch: ['linux_amd64']
         include:
