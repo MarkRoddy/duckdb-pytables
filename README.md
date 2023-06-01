@@ -1,12 +1,10 @@
-A DuckDB extension for using Python based functions in SQL queries.
+PyTables: Any data you can surface with a Python function, queryable in DuckDB.
 
-Note you don't *need* to write your own python functions. This extension will also work with any importable function, both from the standard library as well as installed 3rd party modules. 
 
-# Table Functions
-The `pytable` table function lets you use the output of a python function as the FROM clause in a SQL query. This lets you trivially wire in new data sources, including external ones, to be queried using SQL, joined to other data sources, etc.
+The PyTable extension lets you write DuckDB Table Functions via Python. With this extension, you can query literally anything you can interact with from Python, whether that's a REST API with a Python SDK, files on disk in an obscure format, or any other data source of your chosing that you've always wanted to query via SQL. 
 
-## Table Function Example
-As an example, here is a Python function that uses the PyGithub library to enumerate Git Repos for a user:
+# Example
+Lets start with an example. Here is a Python function that uses the PyGithub library to enumerate a user's Github repos, in a file named `ghub.py`:
 ```python
 from github import Github
 
@@ -18,7 +16,7 @@ def repos_for(username):
         yield (r.name, r.description, r.language)
 ```
 
-Using the `pytable` function in a SQL query, you can call this Python function and query its output.
+Using the `pytable` function in a SQL query, we can invoke this function and uuse the output as if it were a database table.
 ```sql
 > SELECT *
   FROM pytable('ghub:repos_for', 'markroddy',
@@ -35,8 +33,12 @@ Using the `pytable` function in a SQL query, you can call this Python function a
 └─────────────────────────────┴────────────────────────────────────────────────────────────────┴────────────┘
 ```
 
-## Function Arguments
-The first argument must be a string with a value in the form of `'<module>:<function>'`. All other non-named arguments will be passed as an argument to the python function specified. For example:
+# Usage from DuckDB
+The `pytable()` table function can be referenced anywhere a named database table maybe referenced. This includes the `FROM` clause as well as part of a join. 
+
+When invoking, the first argument must be a string with a value in the form of `'<module>:<function>'`, where module is the name of the importable module containing your function, and 'function' is the name of a function or other callable value in the module. For example, if you have a module `foo` in a package `bar`, containing a function `bizbaz()`, you would format this as `foo.bar:bizbaz`
+
+All other non-named arguments will be passed as an argument to the python function specified. For example:
 
 ```sql
 SELECT *
@@ -52,7 +54,7 @@ Please see the table below for a further breakdown of each of the named argument
 | columns        | Required. A struct mapping column names to expected DuckDB data types.|
 | kwargs         | Optional. A struct mapping named arguments to be passed to the python function. In python, this is passed as if you called `func(**kwargs)`. |
 
-## Writing Python Functions for Use as Tables
+# Writing Python Functions for Use as Tables
 Python functions can accept an arbitrary number of primitive data which can be invoked in a positional manner.
 
 These functions must return an iterator (or use the 'yield' syntax). Each value in this iterator will represent
@@ -62,69 +64,7 @@ type for each value should be convertable to the column data type specified. If 
 null value will be substituted.
     
 
-# Scalar Functions
-The `pycall` scalar function lets you call a Python function and capture its output in the SELECT portion of a SQL query. 
-
-## Scalar Function Example
-Lets say you want to take a string and apply title casing it. There is already a builtin function Python named `capwords` in the `strings` module which can do this for us, so we don't even need to write a Python function.
-
-```sql
-> SELECT pycall('string:capwords', 'foo bar baz') as result;
-
-┌─────────────┐
-│   result    │
-│   varchar   │
-├─────────────┤
-│ Foo Bar Baz │
-└─────────────┘
-```
-
-Alternatively, lets say you need to write your own Python function. Let say you need a Fizzbuzz function you can call from SQL, because you're interviewing, and the company that's currently evaluating you is terrible. Here's the python function:
-```python
-def fizzbuzz(i):
-    if (i%3) == 0 and (i%5) == 0:
-        return 'FizzBuzz'
-    elif (i%3) == 0:
-        return 'Fizz'
-    elif (i%5) == 0:
-        return 'Buzz'
-    else:
-        return str(i)
-```
-
-You can call this function from within SQL:
-```sql
-> select pycall('udfs:fizzbuzz', 3) as result;
-┌─────────┐
-│ result  │
-│ varchar │
-├─────────┤
-│ fizz    │
-└─────────┘
-> select pycall('udfs:fizzbuzz', 5) as result;
-┌─────────┐
-│ result  │
-│ varchar │
-├─────────┤
-│ buzz    │
-└─────────┘
-> select pycall('udfs:fizzbuzz', 15) as result;
-┌──────────┐
-│  result  │
-│ varchar  │
-├──────────┤
-│ fizzbuzz │
-└──────────┘
-> select pycall('udfs:fizzbuzz', 11) as result;
-┌─────────┐
-│ result  │
-│ varchar │
-├─────────┤
-│ 11      │
-└─────────┘
-```
-
-## Additional Examples and Use Cases
+# Additional Examples and Use Cases
 Since anything you can do in Python can now show up in DuckDB as a table, the world is your oyster here. In particular, it's trivial to make any external resource that has a python library associated with it show up as a database table. Some things you might want to try (all of which can be found in the [examples/ directory](examples/)). Note, be sure to include the relevant file from the `examples/` directory in your Python path or these won't work.
 
 ### Query your EC2 Instances
@@ -157,9 +97,9 @@ duckdb -unsigned
 Run the following commands in the DuckDB REPL to install the extension and activate it:
 
 ```sql
-SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/python_udf/latest/python${PYTHON_VERSION}';
-INSTALL python_udf;
-LOAD python_udf;
+SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/latest/python${PYTHON_VERSION}';
+INSTALL pytables;
+LOAD pytables;
 ```
 
 # Development
@@ -185,11 +125,11 @@ The main binaries that will be built are:
 ```sh
 ./build/release/duckdb
 ./build/release/test/unittest
-./build/release/extension/python_udf/python_udf.duckdb_extension
+./build/release/extension/pytables/pytables.duckdb_extension
 ```
 - `duckdb` is the binary for the duckdb shell with the extension code automatically loaded. 
 - `unittest` is the test runner of duckdb. Again, the extension is already linked into the binary.
-- `python_udf/python_udf.duckdb_extension` is the loadable binary as it would be distributed.
+- `pytables/pytables.duckdb_extension` is the loadable binary as it would be distributed.
 
 ## Running the extension
 To run the extension code, simply start the shell with `./build/release/duckdb`.

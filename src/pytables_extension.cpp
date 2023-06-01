@@ -6,7 +6,7 @@
 #include <Python.h>
 #include "pyscalar.hpp"
 #include "pytable.hpp"
-#include "python_udf_extension.hpp"
+#include "pytables_extension.hpp"
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string_util.hpp"
@@ -25,7 +25,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 	auto &context = *con.context;
 
 	auto python_scalar = pyudf::GetPythonScalarFunction();
-	// python_udf_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
+	// pytables_fun_info.on_conflict = OnCreateConflict::ALTER_ON_CONFLICT;
 	catalog.CreateFunction(*con.context, python_scalar);
 
 	// pyudf::GetPythonTableFunction();
@@ -65,22 +65,22 @@ static void LoadInternal(DatabaseInstance &instance) {
 	con.Commit();
 }
 
-void Python_udfExtension::Load(DuckDB &db) {
+void PytablesExtension::Load(DuckDB &db) {
 	LoadInternal(*db.instance);
 }
-std::string Python_udfExtension::Name() {
-	return "python_udf";
+std::string PytablesExtension::Name() {
+	return "pytables";
 }
 
 } // namespace duckdb
 
 extern "C" {
 
-DUCKDB_EXTENSION_API void python_udf_init(duckdb::DatabaseInstance &db) {
+DUCKDB_EXTENSION_API void pytables_init(duckdb::DatabaseInstance &db) {
 	LoadInternal(db);
 }
 
-DUCKDB_EXTENSION_API const char *python_udf_version() {
+DUCKDB_EXTENSION_API const char *pytables_version() {
 	return duckdb::DuckDB::LibraryVersion();
 }
 }

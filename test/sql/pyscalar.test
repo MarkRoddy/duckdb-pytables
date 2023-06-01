@@ -1,5 +1,5 @@
 # name: test/sql/pyscalar.test
-# description: test python_udf extension
+# description: test pytables extension
 # group: [pycall]
 
 # Before we load the extension, this will fail
@@ -9,7 +9,7 @@ SELECT pycall('udfs:reverse', 'Sam');
 Catalog Error: Scalar Function with name pycall does not exist!
 
 # Require statement will ensure this test is run with this extension loaded
-require python_udf
+require pytables
 
 # Confirm the extension works
 query I

@@ -154,7 +154,7 @@ jobs:
       with:
         name: ddb${{ env.DDB_VERSION }}-py${{ matrix.python_version }}-extension-${{ matrix.arch }}
         path: |
-          build/release/extension/python_udf/python_udf.duckdb_extension
+          build/release/extension/pytables/pytables.duckdb_extension
 
     - uses: actions/upload-artifact@v2
       with:
@@ -175,7 +175,7 @@ jobs:
         prerelease: true
         title: "Automatic Build"
         files: |
-          build/release/extension/python_udf/python_udf.duckdb_extension
+          build/release/extension/pytables/pytables.duckdb_extension
 
     - name: Deploy
       env:
@@ -195,11 +195,11 @@ jobs:
         elif [[ "$GITHUB_REF" =~ ^(refs/tags/v.+)$ ]] ; then
           echo "Uploading release tagged $GITHUB_REF";
           python3 -m pip install pip awscli
-          ./scripts/extension-upload.sh python_udf ${{ github.ref_name }} $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME true python${{ matrix.python_version }}
+          ./scripts/extension-upload.sh pytables ${{ github.ref_name }} $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME true python${{ matrix.python_version }}
         elif [[ "$GITHUB_REF" =~ ^(refs/heads/main)$ ]] ; then
           echo "Uploading tip of main branch $GITHUB_REF";
           python3 -m pip install pip awscli
-          ./scripts/extension-upload.sh python_udf `git log -1 --format=%h` $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME false python${{ matrix.python_version }}
+          ./scripts/extension-upload.sh pytables `git log -1 --format=%h` $DUCKDB_VERSION ${{matrix.arch}} $BUCKET_NAME false python${{ matrix.python_version }}
         else
           echo "Build is for non tag on a branch other than main, skipping"
         fi

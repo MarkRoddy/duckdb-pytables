@@ -1,3 +1,4 @@
+
 .PHONY: all clean format debug release duckdb_debug duckdb_release pull update
 
 all: release
@@ -25,7 +26,7 @@ BUILD_FLAGS=-DEXTENSION_STATIC_BUILD=1 -DBUILD_TPCH_EXTENSION=0 -DBUILD_PARQUET_
 CLIENT_FLAGS :=
 
 # These flags will make DuckDB build the extension
-EXTENSION_FLAGS=-DDUCKDB_OOT_EXTENSION_NAMES="python_udf" -DDUCKDB_OOT_EXTENSION_PYTHON_UDF_PATH="$(PROJ_DIR)" -DDUCKDB_OOT_EXTENSION_PYTHON_UDF_SHOULD_LINK="TRUE" -DDUCKDB_OOT_EXTENSION_PYTHON_UDF_INCLUDE_PATH="$(PROJ_DIR)src/include" -DBUILD_HTTPFS_EXTENSION="TRUE"
+EXTENSION_FLAGS=-DDUCKDB_OOT_EXTENSION_NAMES="pytables" -DDUCKDB_OOT_EXTENSION_PYTABLES_PATH="$(PROJ_DIR)" -DDUCKDB_OOT_EXTENSION_PYTABLES_SHOULD_LINK="TRUE" -DDUCKDB_OOT_EXTENSION_PYTABLES_INCLUDE_PATH="$(PROJ_DIR)src/include" -DBUILD_HTTPFS_EXTENSION="TRUE"
 
 pull:
 	git submodule init
@@ -70,7 +71,7 @@ python-test-integration:
 # Tests a build of the extension against a download of DuckDB
 extension-integration-tests:
 	cp pythonpkgs/ducktables/dist/ducktables-$(EXTENSION_VERSION)-py3-none-any.whl test/extension-integration/
-	cp build/release/extension/python_udf/python_udf.duckdb_extension test/extension-integration/
+	cp build/release/extension/pytables/pytables.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
 	docker build --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
 	docker run --rm --interactive extension-integration-tests

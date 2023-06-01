@@ -1,6 +1,6 @@
 # name: test/sql/python_table.test
-# description: test python_udf extension
-# group: [python_udf]
+# description: test pytables extension
+# group: [pytables]
 
 # Before we load the extension, this will fail
 statement error
@@ -9,7 +9,7 @@ SELECT columnA FROM pytable('udfs:table', 'Jane', columns={'columnA': 'VARCHAR'}
 Catalog Error: Table Function with name pytable does not exist!
 
 # Require statement will ensure this test is run with this extension loaded
-require python_udf
+require pytables
 
 
 # Confirm our example function for the README works as expected

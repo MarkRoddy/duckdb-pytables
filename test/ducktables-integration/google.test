@@ -3,7 +3,7 @@
 # group: [ducktables-integration]
 
 # Require statement will ensure this test is run with this extension loaded
-require python_udf
+require pytables
 
 
 # Test the Google Sheets integration with their supplied readonly sheet
