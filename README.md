@@ -1,6 +1,6 @@
 PyTables: Quering arbitrary data sources in DuckDB is as easy as writing a Python function.
 
-With this extension, you can query literally anything you can interact with from Python:
+With this DuckDB extension, you can use SQL to query anything that you can interact with from Python:
 * a REST API with a Python SDK:
 * Files on disk in an obscure format
 * A proof of concept model built with Pandas that you'd like integrate with SQL data, or
