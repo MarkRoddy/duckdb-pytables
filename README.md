@@ -1,10 +1,10 @@
 PyTables: Quering arbitrary data sources in DuckDB is as easy as writing a Python function.
 
 With this DuckDB extension, you can use SQL to query anything that you can interact with from Python:
-* a REST API with a Python SDK:
+* A REST API with a Python SDK
 * Files on disk in an obscure format
 * A proof of concept model built with Pandas that you'd like integrate with SQL data, or
-* Any other data source of your chosing that you've always wanted to query via SQL. 
+* Any other data source of your chosing that you've always wanted to query via SQL. Which is to say, I'm not telling you you *should* run SQL against an FTP server, just noting you could.
 
 Best of all, you don't need to know Python! Check out the [companion Python package](https://pypi.org/project/ducktables/) for out of the box data source functions for AWS, Github, Google Sheets, Google Analytics and ChatGPT.
 
