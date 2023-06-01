@@ -1,8 +1,12 @@
-PyTables: Quering arbitrary data sources in DuckDB is as easy as writing a Python functions.
+PyTables: Quering arbitrary data sources in DuckDB is as easy as writing a Python function.
 
-The PyTable extension lets you write DuckDB Table Functions via Python. With this extension, you can query literally anything you can interact with from Python, whether that's a REST API with a Python SDK, files on disk in an obscure format, a proof of concept model built with Pandas that you'd like to hand off for querying in SQL, or any other data source of your chosing that you've always wanted to query via SQL. 
+With this extension, you can query literally anything you can interact with from Python:
+* a REST API with a Python SDK:
+* Files on disk in an obscure format
+* A proof of concept model built with Pandas that you'd like integrate with SQL data, or
+* Any other data source of your chosing that you've always wanted to query via SQL. 
 
-Best of all, you don't need to know Python! Check out the [companion Python package](https://pypi.org/project/ducktables/) for out of the box data sources such as AWS, Github, Google Sheets, Google Analytics and ChatGPT.
+Best of all, you don't need to know Python! Check out the [companion Python package](https://pypi.org/project/ducktables/) for out of the box data source functions for AWS, Github, Google Sheets, Google Analytics and ChatGPT.
 
 # Example
 Lets start with an example. Here is a Python function that uses the PyGithub library to enumerate a user's Github repos, in a file named `ghub.py`:
