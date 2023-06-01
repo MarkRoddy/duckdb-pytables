@@ -1,6 +1,6 @@
 # PyTables
-PyTables is a DuckDB extension that makes running SQL on arbitrary data sources as easy as writing a Python function. If you can access it from Python, you can run SQL against it. Some things you might want to run SQL against:
-* A REST API with a Python SDK
+PyTables is a DuckDB extension that makes running SQL on arbitrary data sources as easy as writing a Python function. If you can access it from Python, you can run SQL against it. Some examples you might want to query:
+* Live data behind a REST API with a Python SDK
 * Files on disk in an obscure format
 * A proof of concept model built with Pandas that you'd like integrate with SQL data, or
 * Any other data source of your chosing that you've always wanted to query via SQL. Which is to say, I'm not telling you you *should* run SQL against an FTP server, just noting that you could.
