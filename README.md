@@ -87,8 +87,17 @@ Note these are not inherent limitations that can not be overcome, but presently 
 * Builds only available for Python 3.8 and later.
 
 # Installation and Usage
+First, [install DuckDB](https://duckdb.org/docs/installation/) v0.8.0 or above.
 
-First, [install DuckDB](https://duckdb.org/docs/installation/) v0.8.0 or above. Determine the major/minor version of python you'll be using, for instance Python 3.10. In this case you would use `3.10` where PYTHON_VERSION is referenced below.
+## Automatic Installation
+Note to be sure to use the version of python you want to use with DuckDB. For instance, if you're using a virtualenv, be sure to source it before running the command below. Alternatively, if you have both Python 3.8 and Python 3.9 installed, and you'd prefer to use version 3.9, replace `python` in the script below with `python3.9`.
+
+```shell
+curl -L https://github.com/MarkRoddy/duckdb-pytables/releases/download/latest/get-pytables.py | python
+```
+
+## Manual Installation
+Determine the major/minor version of python you'll be using, for instance Python 3.10. In this case you would use `3.10` where PYTHON_VERSION is referenced below.
 
 Next, start the DuckDB shell using the 'unsigned' option. 
 ```shell
