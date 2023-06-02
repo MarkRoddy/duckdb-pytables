@@ -48,7 +48,7 @@ apt-get install -y libpython3.9
 ```
 
 ## Automatic Installation
-Note to be sure to use the version of python you want to use with DuckDB. For instance, if you're using a virtualenv, be sure to source it before running the command below. Alternatively, if you have both Python 3.8 and Python 3.9 installed, and you'd prefer to use version 3.9, replace `python` in the script below with `python3.9`.
+Note to be sure to use the version of python you want to use with DuckDB. For instance, if you're using a virtualenv, be sure to source it before running the command below. Alternatively, if you have both Python 3.8 and Python 3.9 installed, and you'd prefer to use version 3.9, replace `python` in the curl command below with `python3.9`.
 
 ```shell
 curl -L https://github.com/MarkRoddy/duckdb-pytables/releases/download/latest/get-pytables.py | python
