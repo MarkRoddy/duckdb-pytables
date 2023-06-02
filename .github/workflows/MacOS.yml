@@ -21,6 +21,7 @@ jobs:
     env:
       OSX_BUILD_UNIVERSAL: 1
       GEN: ninja
+      PYTHON_VERSION: ${{ matrix.python_version }}
 
     steps:
       - uses: actions/checkout@v3
