@@ -26,6 +26,8 @@ RUN pip install  /tmp/ducktables-${EXTENSION_VERSION}-py3-none-any.whl && \
 RUN mkdir -p /root/.duckdb/extensions/v${DUCKDB_VERSION}/${OS_PLATFORM}/
 COPY pytables.duckdb_extension /root/.duckdb/extensions/v${DUCKDB_VERSION}/${OS_PLATFORM}/
 
+ARG GITHUB_ACCESS_TOKEN
+ENV GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN}
 COPY test-suite.sql /
 CMD bash -c 'cat test-suite.sql | duckdb -unsigned'
 
