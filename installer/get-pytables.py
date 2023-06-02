@@ -179,7 +179,7 @@ def main(argv):
     if not ddb_path:
         log.debug("No DuckDB binary found, exitting")
         print("Unable to find a DuckDB binary. If you've already downloaded it, did you place it in your $PATH?")
-        print("If you havent' downloaded it, grab a copy here: https://duckdb.org/docs/installation/")
+        print("If you haven't installed it yet, grab a copy here: https://duckdb.org/docs/installation/")
         return 1
 
     libpython = find_libpython()
