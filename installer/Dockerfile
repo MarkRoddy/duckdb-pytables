@@ -19,7 +19,7 @@ RUN apt-get install -y -qq python${PYTHON_VERSION}
 RUN python$PYTHON_VERSION --version
 
 
-COPY pytables-install.py /
+COPY get-pytables.py /
 COPY test-installer.sh /
 COPY test-load-extension.sql /
 COPY test-run-query.sql /

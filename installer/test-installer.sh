@@ -13,8 +13,8 @@ PYTHON_VERSION="$3";
 DUCKDB_VERSION="$4";
 
 function exit-error () {
-    if [ -f /tmp/pytables-install.py.log ]; then
-        cat /tmp/pytables-install.py.log;
+    if [ -f /tmp/get-pytables.py.log ]; then
+        cat /tmp/get-pytables.py.log;
     fi
     if [ -n "$1" ]; then
         status "$1";
@@ -32,7 +32,7 @@ if [ -z "$GITHUB_ACCESS_TOKEN" ]; then
 fi
 
 # This should fail because of missing DuckDB
-python${PYTHON_VERSION} /pytables-install.py | tee output.txt
+python${PYTHON_VERSION} /get-pytables.py | tee output.txt
 EC="${PIPESTATUS[0]}";
 if [ $EC -eq 0 ]; then
     exit-error "Installer did not exit on missing duckdb"
@@ -55,7 +55,7 @@ curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/download
 # Note we don't prevent the install as finding libpython is something that is fraught with false
 # negatives (detecting it's missing when it is present). So we confirm the warning but don't
 # expect the process to fail.
-python${PYTHON_VERSION} /pytables-install.py | tee output.txt
+python${PYTHON_VERSION} /get-pytables.py | tee output.txt
 if grep -q libpython output.txt; then
     status "Found reference to libpython as expected";
 else
@@ -66,7 +66,7 @@ fi
 apt-get install -y -qq libpython${PYTHON_VERSION}
 
 # Installation should now work but our warning is still present as script is unable to find it
-python${PYTHON_VERSION} /pytables-install.py | tee output.txt
+python${PYTHON_VERSION} /get-pytables.py | tee output.txt
 if grep -q libpython output.txt; then
     status "Found reference to libpython as expected";
 else
@@ -77,7 +77,7 @@ fi
 ldconfig
 
 # Now that we've installed the library + updated ldconfig cache, we should not have a warning.
-python${PYTHON_VERSION} /pytables-install.py | tee output.txt
+python${PYTHON_VERSION} /get-pytables.py | tee output.txt
 if grep -q libpython output.txt; then
     exit-error "Found reference to libpython that we did not expect because we've updated ldconfig cache";
 else
@@ -85,7 +85,7 @@ else
 fi
 
 # Extension installation should work now, but the Python package install will not.
-python${PYTHON_VERSION} /pytables-install.py
+python${PYTHON_VERSION} /get-pytables.py
 
 # Confirm output regarding pip being missing
 if grep -q "No 'pip' module found." output.txt; then
@@ -117,7 +117,7 @@ apt-get install -y -qq python${PYTHON_VERSION}-distutils && \
     curl https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION}
 
 # Re-run the installer, python package should be installed this time.
-python${PYTHON_VERSION} /pytables-install.py && python${PYTHON_VERSION} -c "import ducktables"
+python${PYTHON_VERSION} /get-pytables.py && python${PYTHON_VERSION} -c "import ducktables"
 
 # Confirm by trying to query a ducktables function
 cat /test-run-query.sql | duckdb -unsigned 

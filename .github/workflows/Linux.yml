@@ -181,6 +181,7 @@ jobs:
         title: "Automatic Build"
         files: |
           build/release/extension/pytables/pytables.duckdb_extension
+          installer/get-pytables.py
 
     - name: Deploy
       env:
