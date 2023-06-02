@@ -12,6 +12,7 @@ jobs:
     name: MacOS Release (Universal)
     runs-on: macos-latest
     strategy:
+      fail-fast: false
       matrix:
         # Add commits/tags to build against other DuckDB versions
         duckdb_version: [ '<submodule_version>' ]
