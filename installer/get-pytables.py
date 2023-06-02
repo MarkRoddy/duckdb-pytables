@@ -3,6 +3,7 @@
 import os, sys
 import time
 import shutil
+import argparse
 import subprocess
 import ctypes.util
 import subprocess
@@ -112,33 +113,51 @@ def find_duckdb():
     log.debug("No DuckDB binary found")
     return None
 
-def generate_install_sql():
+def generate_install_sql(extension_version):
     python_version = get_python_version()
     sql_script = f"""
-SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/latest/python{python_version}';
+SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/{extension_version}/python{python_version}';
 INSTALL pytables;
 LOAD pytables;
 """
     return sql_script
 
 def run_query(ddb, query):
-    process = subprocess.Popen(ddb, stdin=subprocess.PIPE)
-    process.communicate(query.encode())
+    log.debug("Running DuckDB Query")
+    process = subprocess.Popen(ddb, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    b_stdout, b_stderr = process.communicate(query.encode())
+    stdout = b_stdout.decode()
+    stderr = b_stderr.decode()
+    print(stdout)
+    print(stderr)
+    for line in (l.strip() for l in stdout.split("\n") if l.strip()):
+        log.debug("stdout: " + line)
+    for line in (l.strip() for l in stderr.split("\n") if l.strip()):
+        log.debug("stderr: " + line)
     return process.returncode
                 
-def main(args):
-    log.basicConfig(filename='/tmp/' + args[0] + '.log', filemode='w',
+def main(argv):
+    program = os.path.basename(argv[0])
+    parser = argparse.ArgumentParser(prog = program, description='Installs pytables, a DuckDB extension')
+    parser.add_argument('--ext-version', default = 'latest', dest = 'extension_version')
+    args = parser.parse_args()
+    
+
+    log.basicConfig(filename='/tmp/' + program + '.log', filemode='a',
                     level=log.DEBUG,
                     format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     log.Formatter.converter = time.gmtime
+    log.debug("Starting installation")
     ddb_path = find_duckdb()
     if not ddb_path:
+        log.debug("No DuckDB binary found, exitting")
         print("Unable to find a DuckDB binary. If you've already downloaded it, did you place it in your $PATH?")
         print("If you havent' downloaded it, grab a copy here: https://duckdb.org/docs/installation/")
         return 1
 
     libpython = find_libpython()
     if not libpython:
+        log.debug("No libpython gound")
         install_cmd = get_libpython_install_cmd()
 
         if install_cmd:
@@ -149,9 +168,10 @@ def main(args):
             print("Alternatively, if you've compiled your Python interpretter from source, make sure you specify the shared library is installed by running `./configure --enable-shared` before compiling.")
 
     ddb = [ddb_path, '-unsigned']
-    query = generate_install_sql()
+    query = generate_install_sql(args.extension_version)
     result = run_query(ddb, query)
     if result:
+        log.debug("Encountered an error installing the extension")
         print("Error installing extension")
         return 1
 
