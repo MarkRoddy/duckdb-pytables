@@ -10,7 +10,7 @@ RUN apt-get update -y && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update -y
 
-# Just enough of a Python install to run our curlbash script and detect that it handles error conditions
+# Just enough of a Python install to run our pytables-install script and detect that it handles error conditions
 ARG PYTHON_VERSION
 RUN test -n "$PYTHON_VERSION"
 RUN apt-get install -y -qq python${PYTHON_VERSION}
@@ -19,7 +19,7 @@ RUN apt-get install -y -qq python${PYTHON_VERSION}
 RUN python$PYTHON_VERSION --version
 
 
-COPY curlbash.py /tmp/
+COPY pytables-install.py /tmp/
 
 # This should fail because of a missing libpython
 COPY test-01-expected-failure.sh /
@@ -41,7 +41,7 @@ RUN curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/down
     rm /tmp/duckdb_cli.zip
 
 # Installation should work now that we have requirements satisfied, though no package installed, so our test query will fail
-RUN python${PYTHON_VERSION} /tmp/curlbash.py
+RUN python${PYTHON_VERSION} /tmp/pytables-install.py
 COPY test-suite.sql /
 # todo: verify that this failed
 RUN cat /test-suite.sql | duckdb -unsigned || true
@@ -51,7 +51,7 @@ RUN cat /test-suite.sql | duckdb -unsigned || true
 RUN apt-get install -y -qq python${PYTHON_VERSION}-distutils && \
     curl https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION}
 # RUN python${PYTHON_VERSION} -m ensurepip --upgrade
-RUN python${PYTHON_VERSION} /tmp/curlbash.py && python${PYTHON_VERSION} -c "import ducktables"
+RUN python${PYTHON_VERSION} /tmp/pytables-install.py && python${PYTHON_VERSION} -c "import ducktables"
 
 # Confirm by trying to query a ducktables function
 RUN cat /test-suite.sql | duckdb -unsigned || true

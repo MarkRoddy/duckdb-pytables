@@ -108,12 +108,13 @@ container-compile:
 	  build-duckdb-python-py$(PYTHON_VERSION) \
 	  bash -c "cd $(shell pwd) && bash scripts/docker-build-in-container.sh $(PYTHON_VERSION)"
 
-test-curlbash:
-	cd curlbash/ && \
+# Executes the installer script and check that it correctly detects some common misconfigurations
+test-installer:
+	cd installer/ && \
 	docker build \
 	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 	  --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) \
-	  -t curlbash-tests-py$(PYTHON_VERSION) . 
+	  -t installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) . 
 
 shell-curlbash:
 	docker run --rm -it curlbash-tests-py$(PYTHON_VERSION) bash
