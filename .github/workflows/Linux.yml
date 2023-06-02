@@ -43,6 +43,20 @@ jobs:
         apt-get install -y -qq ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client git clang-format libasan6 ccache docker.io
         git config --global --add safe.directory '*'
 
+    - name: Setup Python ${{ matrix.python_version }}
+      run: |
+        apt-get install -y -qq python${{ matrix.python_version }}-dev
+  
+    # - name: Set up Python ${{ matrix.python_version }}
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: ${{ matrix.python_version }}
+
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: 'true'
+
       # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
       # repo is pinned to". That doesn't help when we're building an artifact name that includes
       # the version of duckdb we've pinned against. So we create a separate variable here that will
@@ -59,20 +73,6 @@ jobs:
       run: |
         echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
         echo "Matrix Provided DuckDB Version: $DUCKDB_VERSION"
-
-    - name: Setup Python ${{ matrix.python_version }}
-      run: |
-        apt-get install -y -qq python${{ matrix.python_version }}-dev
-  
-    # - name: Set up Python ${{ matrix.python_version }}
-    #   uses: actions/setup-python@v4
-    #   with:
-    #     python-version: ${{ matrix.python_version }}
-
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        submodules: 'true'
 
     - name: Restore cached build artifacts
       id: cache-restore
