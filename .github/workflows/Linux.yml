@@ -151,10 +151,8 @@ jobs:
         make extension-integration-tests
 
     - name: Run Installer Script Tests
-      env: 
-        GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        make PYTHON_VERSION=${{ matrix.python_version }} DUCKDB_VERSION=$DDB_VERSION test-installer
+        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} PYTHON_VERSION=${{ matrix.python_version }} DUCKDB_VERSION=$DDB_VERSION test-installer
         
     - uses: actions/upload-artifact@v2
       with:
