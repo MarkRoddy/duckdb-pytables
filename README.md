@@ -34,6 +34,42 @@ Using the `pytable` function in a SQL query, we can invoke this function and use
 └─────────┴─────────────────────────────────────────────────────────────┴──────────┘
 ```
 
+# Installation
+First, [install DuckDB](https://duckdb.org/docs/installation/) v0.8.0 or above.
+
+Second, ensure you have python shared library along with your interpreter `libpython3.X.so`. Note that for Linux distributions in particular, this is often contained in the separate package. So if you installed python via:
+```shell
+apt-get install -y python3.9
+```
+
+To get the shared library, you'll need to run:
+```shell
+apt-get install -y libpython3.9
+```
+
+## Automatic Installation
+Note to be sure to use the version of python you want to use with DuckDB. For instance, if you're using a virtualenv, be sure to source it before running the command below. Alternatively, if you have both Python 3.8 and Python 3.9 installed, and you'd prefer to use version 3.9, replace `python` in the script below with `python3.9`.
+
+```shell
+curl -L https://github.com/MarkRoddy/duckdb-pytables/releases/download/latest/get-pytables.py | python
+```
+
+## Manual Installation
+Determine the major/minor version of python you'll be using, for instance Python 3.10. In this case you would use `3.10` where PYTHON_VERSION is referenced below.
+
+Next, start the DuckDB shell using the 'unsigned' option. 
+```shell
+duckdb -unsigned
+```
+
+Run the following commands in the DuckDB REPL to install the extension and activate it:
+
+```sql
+SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/latest/python${PYTHON_VERSION}';
+INSTALL pytables;
+LOAD pytables;
+```
+
 # Usage from DuckDB
 The `pytable()` table function can be referenced anywhere a named database table maybe referenced. This includes the `FROM` clause as well as part of a join. 
 
@@ -85,42 +121,6 @@ Note these are not inherent limitations that can not be overcome, but presently 
 * Scalar functions only support returning `VARCHAR` values at this time.
 * Not all DuckDB and Python datatypes have been fully mapped. Please file an issue if you find one unsupported.
 * Builds only available for Python 3.8 and later.
-
-# Installation and Usage
-First, [install DuckDB](https://duckdb.org/docs/installation/) v0.8.0 or above.
-
-Second, ensure you have python shared library along with your interpreter `libpython3.X.so`. Note that for Linux distributions in particular, this is often contained in the separate package. So if you installed python via:
-```shell
-apt-get install -y python3.9
-```
-
-To get the shared library, you'll need to run:
-```shell
-apt-get install -y libpython3.9
-```
-
-## Automatic Installation
-Note to be sure to use the version of python you want to use with DuckDB. For instance, if you're using a virtualenv, be sure to source it before running the command below. Alternatively, if you have both Python 3.8 and Python 3.9 installed, and you'd prefer to use version 3.9, replace `python` in the script below with `python3.9`.
-
-```shell
-curl -L https://github.com/MarkRoddy/duckdb-pytables/releases/download/latest/get-pytables.py | python
-```
-
-## Manual Installation
-Determine the major/minor version of python you'll be using, for instance Python 3.10. In this case you would use `3.10` where PYTHON_VERSION is referenced below.
-
-Next, start the DuckDB shell using the 'unsigned' option. 
-```shell
-duckdb -unsigned
-```
-
-Run the following commands in the DuckDB REPL to install the extension and activate it:
-
-```sql
-SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/latest/python${PYTHON_VERSION}';
-INSTALL pytables;
-LOAD pytables;
-```
 
 # Development
 Clone the repo being sure to use the `recurse-submodules` option:
