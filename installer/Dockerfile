@@ -53,6 +53,8 @@ RUN apt-get install -y -qq python${PYTHON_VERSION}-distutils && \
 # RUN python${PYTHON_VERSION} -m ensurepip --upgrade
 RUN python${PYTHON_VERSION} /tmp/pytables-install.py && python${PYTHON_VERSION} -c "import ducktables"
 
+ARG GITHUB_ACCESS_TOKEN
+ENV GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN}
 # Confirm by trying to query a ducktables function
 RUN cat /test-suite.sql | duckdb -unsigned || true
 
