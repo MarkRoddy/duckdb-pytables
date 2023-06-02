@@ -114,10 +114,11 @@ test-installer:
 	docker build \
 	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 	  --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) \
+	  --build-arg GITHUB_ACCESS_TOKEN=$(GITHUB_ACCESS_TOKEN) \
 	  -t installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) . 
 
-shell-curlbash:
-	docker run --rm -it curlbash-tests-py$(PYTHON_VERSION) bash
+shell-installer:
+	docker run --rm -it installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) bash
 
 # Main tests
 test: test_release
