@@ -149,6 +149,10 @@ jobs:
     - name: Run Integration Tests
       run: |
         make extension-integration-tests
+
+    - name: Run Installer Script Tests
+      run: |
+        make PYTHON_VERSION=${{ matrix.python_version }} DUCKDB_VERSION=$DUCKDB_VERSION test-curlbash
         
     - uses: actions/upload-artifact@v2
       with:
