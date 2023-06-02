@@ -9,6 +9,27 @@ import ctypes.util
 import subprocess
 import logging as log
 
+
+def check_os():
+    log.debug(f"Checking if '{sys.platform}' is a valid platform for installation")
+    if sys.platform in ("linux", "linux2"):
+        log.debug("we good")
+        return True
+    elif platform == "darwin":
+        # OS X
+        log.debug("Not yet supported")
+        print("Builds for OSX are not yet available. If you'd like to see OSX support, please share your voice here:")
+        print("https://github.com/MarkRoddy/duckdb-pytables/issues/37")
+        return False
+    elif platform == "win32":
+        log.debug("Not yet supported")
+        print("Builds for Windows are not yet available. If you'd like to see Windows support, please share your voice here:")
+        print("https://github.com/MarkRoddy/duckdb-pytables/issues/38")
+        return False
+    else:
+        log.debug("This platform isn't recognized so we're just gonna hope for the best")
+        return True
+        
 def get_python_version():
     return f"{sys.version_info.major}.{sys.version_info.minor}"
 
@@ -148,6 +169,12 @@ def main(argv):
                     format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     log.Formatter.converter = time.gmtime
     log.debug("Starting installation")
+
+    we_are_good = check_os()
+    if not we_are_good:
+        log.debug("Failed OS system check")
+        return 1
+    
     ddb_path = find_duckdb()
     if not ddb_path:
         log.debug("No DuckDB binary found, exitting")
