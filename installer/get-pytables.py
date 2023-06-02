@@ -3,6 +3,7 @@
 import os, sys
 import time
 import shutil
+import argparse
 import subprocess
 import ctypes.util
 import subprocess
@@ -112,10 +113,10 @@ def find_duckdb():
     log.debug("No DuckDB binary found")
     return None
 
-def generate_install_sql():
+def generate_install_sql(extension_version):
     python_version = get_python_version()
     sql_script = f"""
-SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/latest/python{python_version}';
+SET custom_extension_repository='net.ednit.duckdb-extensions.s3.us-west-2.amazonaws.com/pytables/{extension_version}/python{python_version}';
 INSTALL pytables;
 LOAD pytables;
 """
@@ -135,8 +136,14 @@ def run_query(ddb, query):
         log.debug("stderr: " + line)
     return process.returncode
                 
-def main(args):
-    log.basicConfig(filename='/tmp/' + args[0] + '.log', filemode='a',
+def main(argv):
+    program = os.path.basename(argv[0])
+    parser = argparse.ArgumentParser(prog = program, description='Installs pytables, a DuckDB extension')
+    parser.add_argument('--ext-version', default = 'latest', dest = 'extension_version')
+    args = parser.parse_args()
+    
+
+    log.basicConfig(filename='/tmp/' + program + '.log', filemode='a',
                     level=log.DEBUG,
                     format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     log.Formatter.converter = time.gmtime
@@ -161,7 +168,7 @@ def main(args):
             print("Alternatively, if you've compiled your Python interpretter from source, make sure you specify the shared library is installed by running `./configure --enable-shared` before compiling.")
 
     ddb = [ddb_path, '-unsigned']
-    query = generate_install_sql()
+    query = generate_install_sql(args.extension_version)
     result = run_query(ddb, query)
     if result:
         log.debug("Encountered an error installing the extension")

@@ -86,7 +86,12 @@ extension-integration-tests:
 post-release-integration:
 	if [ -z "$(RELEASE_SHA)" ]; then echo "Please specify a RELEASE_SHA to test against;"; exit 1; fi
 	cd test/post-release-integration/ && \
-	docker build --build-arg RELEASE_SHA=$(RELEASE_SHA) --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) -t post-release-integration . && docker run --rm --interactive post-release-integration
+	docker build \
+	  --build-arg RELEASE_SHA=$(RELEASE_SHA) \
+	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
+	  --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) \
+	  -t post-release-integration . && \
+	docker run --rm --interactive post-release-integration
 
 
 # Builds a container image with the specified version of Python suitable
