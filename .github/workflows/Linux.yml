@@ -152,7 +152,7 @@ jobs:
 
     - name: Run Installer Script Tests
       run: |
-        make PYTHON_VERSION=${{ matrix.python_version }} DUCKDB_VERSION=$DUCKDB_VERSION test-installer
+        make PYTHON_VERSION=${{ matrix.python_version }} DUCKDB_VERSION=$DDB_VERSION test-installer
         
     - uses: actions/upload-artifact@v2
       with:
