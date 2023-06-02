@@ -33,22 +33,6 @@ jobs:
       GEN: ninja
       PYTHON_VERSION: ${{ matrix.python_version }}
     steps:
-      # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
-      # repo is pinned to". That doesn't help when we're building an artifact name that includes
-      # the version of duckdb we've pinned against. So we create a separate variable here that will
-      # contain the actual version number.
-    - name: Extract + Export DuckDB Pinned Version if in Use
-      if: ${{ '<submodule_version>' == matrix.duckdb_version }}
-      run: |
-        export DUCKDB_VERSION=`git tag --points-at HEAD`
-        export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
-        echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
-      
-    - name: Export DuckDB if Ignoring Pinned Version
-      if: ${{ '<submodule_version>' != matrix.duckdb_version }}
-      run: |
-        echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
-
     - name: Install required ubuntu packages
       if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
       run: |
@@ -72,6 +56,23 @@ jobs:
       with:
         fetch-depth: 0
         submodules: 'true'
+
+      # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
+      # repo is pinned to". That doesn't help when we're building an artifact name that includes
+      # the version of duckdb we've pinned against. So we create a separate variable here that will
+      # contain the actual version number.
+    - name: Extract + Export DuckDB Pinned Version if in Use
+      if: ${{ '<submodule_version>' == matrix.duckdb_version }}
+      run: |
+        export DUCKDB_VERSION=`git tag --points-at HEAD`
+        export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
+        echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
+      
+    - name: Export DuckDB if Ignoring Pinned Version
+      if: ${{ '<submodule_version>' != matrix.duckdb_version }}
+      run: |
+        echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
+        echo "Matrix Provided DuckDB Version: $DUCKDB_VERSION"
 
     - name: Restore cached build artifacts
       id: cache-restore
@@ -148,7 +149,11 @@ jobs:
 
     - name: Run Integration Tests
       run: |
-        make extension-integration-tests
+        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} extension-integration-tests
+
+    - name: Run Installer Script Tests
+      run: |
+        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} PYTHON_VERSION=${{ matrix.python_version }} test-installer
         
     - uses: actions/upload-artifact@v2
       with:
@@ -176,6 +181,7 @@ jobs:
         title: "Automatic Build"
         files: |
           build/release/extension/pytables/pytables.duckdb_extension
+          installer/get-pytables.py
 
     - name: Deploy
       env:

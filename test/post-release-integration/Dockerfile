@@ -12,6 +12,8 @@ RUN apt-get update -y && \
     apt-get update -y
 RUN apt-get install -y -qq gettext-base curl unzip python${PYTHON_VERSION} libpython${PYTHON_VERSION} python${PYTHON_VERSION}-distutils python${PYTHON_VERSION}-venv
 
+# Confirm we have our expected version of python installed
+RUN python$PYTHON_VERSION --version
 
 # Install DuckDB
 ARG DUCKDB_VERSION

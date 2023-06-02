@@ -7,6 +7,7 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJ_DIR := $(dir $(MKFILE_PATH))
 PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
 EXTENSION_VERSION := $(shell cat pythonpkgs/ducktables/version.txt)
+DUCKDB_VERSION := $(if $(DUCKDB_VERSION),$(DUCKDB_VERSION),0.8.0)
 
 OSX_BUILD_UNIVERSAL_FLAG=
 ifeq (${OSX_BUILD_UNIVERSAL}, 1)
@@ -73,14 +74,19 @@ extension-integration-tests:
 	cp pythonpkgs/ducktables/dist/ducktables-$(EXTENSION_VERSION)-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/pytables/pytables.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
-	docker build --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) --build-arg DUCKDB_VERSION=0.8.0 -t extension-integration-tests . && \
+	docker build \
+	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
+	  --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) \
+	  --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) \
+	  --build-arg GITHUB_ACCESS_TOKEN=$(GITHUB_ACCESS_TOKEN) \
+	  -t extension-integration-tests . && \
 	docker run --rm --interactive extension-integration-tests
 
 # Test the latest release of the extension against a download of DuckDB
 post-release-integration:
 	if [ -z "$(RELEASE_SHA)" ]; then echo "Please specify a RELEASE_SHA to test against;"; exit 1; fi
 	cd test/post-release-integration/ && \
-	docker build --build-arg RELEASE_SHA=$(RELEASE_SHA) --build-arg PYTHON_VERSION=3.9 --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) --build-arg DUCKDB_VERSION=0.8.0 -t post-release-integration . && docker run --rm --interactive post-release-integration
+	docker build --build-arg RELEASE_SHA=$(RELEASE_SHA) --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) -t post-release-integration . && docker run --rm --interactive post-release-integration
 
 
 # Builds a container image with the specified version of Python suitable
@@ -102,6 +108,20 @@ container-compile:
 	  --volume "$(shell pwd)/:$(shell pwd)" \
 	  build-duckdb-python-py$(PYTHON_VERSION) \
 	  bash -c "cd $(shell pwd) && bash scripts/docker-build-in-container.sh $(PYTHON_VERSION)"
+
+# Executes the installer script and check that it correctly detects some common misconfigurations
+test-installer:
+	cd installer/ && \
+	docker build \
+	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
+	  --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) \
+	  -t installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) . && \
+	docker run --rm \
+	  --env GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN} \
+	  installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION)
+
+shell-installer:
+	docker run --rm -it installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) bash
 
 # Main tests
 test: test_release
