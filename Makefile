@@ -115,8 +115,10 @@ test-installer:
 	docker build \
 	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 	  --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) \
-	  --build-arg GITHUB_ACCESS_TOKEN=$(GITHUB_ACCESS_TOKEN) \
-	  -t installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) . 
+	  -t installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) . && \
+	docker run --rm -it \
+	  --env GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN} \
+	  installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION)
 
 shell-installer:
 	docker run --rm -it installer-tests-ddb$(DUCKDB_VERSION)-py$(PYTHON_VERSION) bash

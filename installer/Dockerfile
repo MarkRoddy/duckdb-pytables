@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS minimal
+FROM ubuntu:20.04
 
 ARG OS=linux
 ARG PLATFORM=amd64
@@ -19,42 +19,14 @@ RUN apt-get install -y -qq python${PYTHON_VERSION}
 RUN python$PYTHON_VERSION --version
 
 
-COPY pytables-install.py /tmp/
+COPY pytables-install.py /
+COPY test-installer.sh /
+COPY test-load-extension.sql /
+COPY test-run-query.sql /
 
-# This should fail because of a missing libpython
-COPY test-01-expected-failure.sh /
-RUN bash /test-01-expected-failure.sh ${PYTHON_VERSION}
-
-# Install the libpython
-RUN apt-get install -y -qq libpython${PYTHON_VERSION}
-
-
-# This should fail because of missing DuckDB
-RUN bash /test-01-expected-failure.sh ${PYTHON_VERSION}
-
-# Install DuckDB
 ARG DUCKDB_VERSION
-RUN test -n "$DUCKDB_VERSION" 
-RUN curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-${OS}-${PLATFORM}.zip" && \
-    unzip -d /tmp/ /tmp/duckdb_cli.zip  && \
-    mv /tmp/duckdb /usr/bin/duckdb && \
-    rm /tmp/duckdb_cli.zip
-
-# Installation should work now that we have requirements satisfied, though no package installed, so our test query will fail
-RUN python${PYTHON_VERSION} /tmp/pytables-install.py
-COPY test-suite.sql /
-# todo: verify that this failed
-RUN cat /test-suite.sql | duckdb -unsigned || true
-
-
-# Install pip, and then the package should be installed
-RUN apt-get install -y -qq python${PYTHON_VERSION}-distutils && \
-    curl https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION}
-# RUN python${PYTHON_VERSION} -m ensurepip --upgrade
-RUN python${PYTHON_VERSION} /tmp/pytables-install.py && python${PYTHON_VERSION} -c "import ducktables"
-
-ARG GITHUB_ACCESS_TOKEN
-ENV GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN}
-# Confirm by trying to query a ducktables function
-RUN cat /test-suite.sql | duckdb -unsigned || true
-
+ENV DUCKDB_VERSION=${DUCKDB_VERSION}
+ENV OS=${OS}
+ENV PLATFORM=${PLATFORM}
+ENV PYTHON_VERSION=${PYTHON_VERSION}
+CMD bash /test-installer.sh ${OS} ${PLATFORM} ${PYTHON_VERSION} ${DUCKDB_VERSION}

@@ -10,9 +10,21 @@ def get_python_version():
     return f"{sys.version_info.major}.{sys.version_info.minor}"
 
 def find_libpython():
-    library_name = f"python{get_python_version()}"
-    library_path = ctypes.util.find_library(library_name)
-    return library_path
+    python_version = f'{sys.version_info.major}.{sys.version_info.minor}'
+
+    # Try different names for the shared library
+    library_names = [
+        f'libpython{python_version}.so.1.0',
+        f'libpython{python_version}m.so.1.0',
+        f'libpython{python_version}.so',
+        f'libpython{python_version}m.so',
+        ]
+
+    for library_name in library_names:
+        library_path = ctypes.util.find_library(library_name)
+        if library_path is not None:
+            return library_path    
+    return None
 
 def check_pip():
     try:
