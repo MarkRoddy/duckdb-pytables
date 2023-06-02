@@ -31,7 +31,7 @@ if [ -z "$GITHUB_ACCESS_TOKEN" ]; then
     exit-error "Missing GITHUB_ACCESS_TOKEN needed to run sql script"
 fi
 
-# This should fail because of missing DuckDB
+status "Install should fail because of missing DuckDB"
 python${PYTHON_VERSION} /get-pytables.py | tee output.txt
 EC="${PIPESTATUS[0]}";
 if [ $EC -eq 0 ]; then
@@ -43,6 +43,7 @@ else
     exit-error "Did not find reference to missing DuckDB in output as expected";
 fi
 
+status "Installing DuckDB"
 test -n "$DUCKDB_VERSION" 
 curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-${OS}-${PLATFORM}.zip" && \
     unzip -d /tmp/ /tmp/duckdb_cli.zip  && \
@@ -62,21 +63,33 @@ else
     exit-error "Did not find reference to libpython in output as expected";
 fi
 
-# Install the libpython
+status "Installing libpython"
 apt-get install -y -qq libpython${PYTHON_VERSION}
 
-# Installation should now work but our warning is still present as script is unable to find it
+status "Installation should now work but our warning is still present as script is unable to find it"
 python${PYTHON_VERSION} /get-pytables.py | tee output.txt
 if grep -q libpython output.txt; then
     status "Found reference to libpython as expected";
 else
-    exit-error "Did not find reference to libpython in output as expected";
+    # We use the DeadSnakes PPA for installing various versions of python, and it does
+    # not update ldconfig cache. However, standard Ubuntu packages do. So we have an
+    # exception to our expectation that the cache won't be updated which we need to
+    # check for.
+    if lsb_release -a | grep "Ubuntu 20.04"; then
+        if [ "3.8" == "$PYTHON_VERSION" ]; then
+           status "Running stock Ubuntu Python, ignore lack of a warning";
+        else
+            exit-error "Did not find reference to libpython in output as expected";
+        fi
+    else
+        exit-error "Did not find reference to libpython in output as expected";
+    fi
 fi
 
-# Update the shared library cache so our script will be able to find it
+status "Updating the shared library cache so our script will be able to find it"
 ldconfig
 
-# Now that we've installed the library + updated ldconfig cache, we should not have a warning.
+status "Now that we've installed the library + updated ldconfig cache, we should not have a warning."
 python${PYTHON_VERSION} /get-pytables.py | tee output.txt
 if grep -q libpython output.txt; then
     exit-error "Found reference to libpython that we did not expect because we've updated ldconfig cache";
@@ -84,10 +97,10 @@ else
     status "No reference to libpython as expected"
 fi
 
-# Extension installation should work now, but the Python package install will not.
+status "Extension installation should work now, but the Python package install will not."
 python${PYTHON_VERSION} /get-pytables.py
 
-# Confirm output regarding pip being missing
+status "Confirming output regarding pip being missing"
 if grep -q "No 'pip' module found." output.txt; then
     status "Found expected missing pip error message";
 else
