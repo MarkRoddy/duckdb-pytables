@@ -149,7 +149,7 @@ jobs:
 
     - name: Run Integration Tests
       run: |
-        make extension-integration-tests
+        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} extension-integration-tests
 
     - name: Run Installer Script Tests
       run: |
