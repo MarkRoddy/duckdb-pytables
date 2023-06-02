@@ -43,11 +43,13 @@ jobs:
         export DUCKDB_VERSION=`git tag --points-at HEAD`
         export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
         echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
+        echo "Looked Up DuckDB Version: $DUCKDB_VERSION"
       
     - name: Export DuckDB if Ignoring Pinned Version
       if: ${{ '<submodule_version>' != matrix.duckdb_version }}
       run: |
         echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
+        echo "Matrix Provided DuckDB Version: $DUCKDB_VERSION"
 
     - name: Install required ubuntu packages
       if: ${{ matrix.arch == 'linux_amd64' || matrix.arch == 'linux_arm64' }}
