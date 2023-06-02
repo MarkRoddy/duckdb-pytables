@@ -78,7 +78,7 @@ extension-integration-tests:
 	  --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 	  --build-arg EXTENSION_VERSION=$(EXTENSION_VERSION) \
 	  --build-arg DUCKDB_VERSION=$(DUCKDB_VERSION) \
-	  --build-arg GITHUB_ACCESS_TOKEN=$(GITHUB_ACCESS_TOKEN)
+	  --build-arg GITHUB_ACCESS_TOKEN=$(GITHUB_ACCESS_TOKEN) \
 	  -t extension-integration-tests . && \
 	docker run --rm --interactive extension-integration-tests
 
