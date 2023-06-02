@@ -7,7 +7,7 @@ if [ 1 != $# ]; then
     exit 1;
 fi
 
-python${PYTHON_VERSION} /tmp/curlbash.py
+python${PYTHON_VERSION} /tmp/pytables-install.py
 
 # Check if your command was successful
 if [ $? -eq 0 ]; then
