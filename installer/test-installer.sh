@@ -13,13 +13,17 @@ PYTHON_VERSION="$3";
 DUCKDB_VERSION="$4";
 
 function exit-error () {
-    if [ -f /tmp/get-pytables.py.log ]; then
-        cat /tmp/get-pytables.py.log;
-    fi
+    cat-log
     if [ -n "$1" ]; then
         status "$1";
     fi
     exit 1;
+}
+
+function cat-log() {
+    if [ -f /tmp/get-pytables.py.log ]; then
+        cat /tmp/get-pytables.py.log;
+    fi
 }
 
 function status () {
@@ -49,14 +53,17 @@ curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/download
     unzip -d /tmp/ /tmp/duckdb_cli.zip  && \
     mv /tmp/duckdb /usr/bin/duckdb && \
     rm /tmp/duckdb_cli.zip
-
+status "Installation of DuckDB Complete"
 
 # Installation should now fail because of the missing shared library. Our script will issue
 # a warning and then try to install the extension which will fail.
 # Note we don't prevent the install as finding libpython is something that is fraught with false
 # negatives (detecting it's missing when it is present). So we confirm the warning but don't
 # expect the process to fail.
-python${PYTHON_VERSION} /get-pytables.py | tee output.txt
+python${PYTHON_VERSION} /get-pytables.py | tee output.txt;
+if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+    exit-error "Installer script succeeded unexpectedly, should have failed due to missing libpython";
+fi
 if grep -q libpython output.txt; then
     status "Found reference to libpython as expected";
 else
@@ -68,6 +75,9 @@ apt-get install -y -qq libpython${PYTHON_VERSION}
 
 status "Installation should now work but our warning is still present as script is unable to find it"
 python${PYTHON_VERSION} /get-pytables.py | tee output.txt
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    exit-error "Installer script unexpectedly exitted with an error";
+fi
 if grep -q libpython output.txt; then
     status "Found reference to libpython as expected";
 else
@@ -91,6 +101,9 @@ ldconfig
 
 status "Now that we've installed the library + updated ldconfig cache, we should not have a warning."
 python${PYTHON_VERSION} /get-pytables.py | tee output.txt
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    exit-error "Installer script unexpectedly exitted with an error";
+fi
 if grep -q libpython output.txt; then
     exit-error "Found reference to libpython that we did not expect because we've updated ldconfig cache";
 else
@@ -99,6 +112,9 @@ fi
 
 status "Extension installation should work now, but the Python package install will not."
 python${PYTHON_VERSION} /get-pytables.py
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    exit-error "Installer script unexpectedly exitted with an error";
+fi
 
 status "Confirming output regarding pip being missing"
 if grep -q "No 'pip' module found." output.txt; then
@@ -133,5 +149,15 @@ apt-get install -y -qq python${PYTHON_VERSION}-distutils && \
 python${PYTHON_VERSION} /get-pytables.py && python${PYTHON_VERSION} -c "import ducktables"
 
 # Confirm by trying to query a ducktables function
-cat /test-run-query.sql | duckdb -unsigned 
+# cat /test-run-query.sql | duckdb -unsigned | tee output.txt
+cat /test-run-query.sql | duckdb -unsigned | tee output.txt
+if [ "${PIPESTATUS[1]}" -ne 0 ]; then
+    exit-error "DuckDB unexpectedly failed to run the query";
+fi
+if grep -q "duckdb-wasm" output.txt; then
+    status "Found expected reference to duckdb-wasm (github repo that should be returned)";
+else
+    exit-error "Missing expected reference to duckdb-wasm, github repo";
+fi
 
+cat-log

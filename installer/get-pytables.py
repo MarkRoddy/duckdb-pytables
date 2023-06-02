@@ -122,23 +122,35 @@ LOAD pytables;
     return sql_script
 
 def run_query(ddb, query):
-    process = subprocess.Popen(ddb, stdin=subprocess.PIPE)
-    process.communicate(query.encode())
+    log.debug("Running DuckDB Query")
+    process = subprocess.Popen(ddb, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    b_stdout, b_stderr = process.communicate(query.encode())
+    stdout = b_stdout.decode()
+    stderr = b_stderr.decode()
+    print(stdout)
+    print(stderr)
+    for line in (l.strip() for l in stdout.split("\n") if l.strip()):
+        log.debug("stdout: " + line)
+    for line in (l.strip() for l in stderr.split("\n") if l.strip()):
+        log.debug("stderr: " + line)
     return process.returncode
                 
 def main(args):
-    log.basicConfig(filename='/tmp/' + args[0] + '.log', filemode='w',
+    log.basicConfig(filename='/tmp/' + args[0] + '.log', filemode='a',
                     level=log.DEBUG,
                     format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     log.Formatter.converter = time.gmtime
+    log.debug("Starting installation")
     ddb_path = find_duckdb()
     if not ddb_path:
+        log.debug("No DuckDB binary found, exitting")
         print("Unable to find a DuckDB binary. If you've already downloaded it, did you place it in your $PATH?")
         print("If you havent' downloaded it, grab a copy here: https://duckdb.org/docs/installation/")
         return 1
 
     libpython = find_libpython()
     if not libpython:
+        log.debug("No libpython gound")
         install_cmd = get_libpython_install_cmd()
 
         if install_cmd:
@@ -152,6 +164,7 @@ def main(args):
     query = generate_install_sql()
     result = run_query(ddb, query)
     if result:
+        log.debug("Encountered an error installing the extension")
         print("Error installing extension")
         return 1
 
