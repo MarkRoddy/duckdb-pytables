@@ -93,6 +93,12 @@ post-release-integration:
 	  -t post-release-integration . && \
 	docker run --rm --interactive post-release-integration
 
+all-post-release-integration:
+	$(MAKE) PYTHON_VERSION=3.8 post-release-integration test-installer
+	$(MAKE) PYTHON_VERSION=3.9 post-release-integration test-installer
+	$(MAKE) PYTHON_VERSION=3.10 post-release-integration test-installer
+	$(MAKE) PYTHON_VERSION=3.11 post-release-integration test-installer
+
 
 # Builds a container image with the specified version of Python suitable
 # for doing local development without having to install dependencies
