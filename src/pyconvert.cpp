@@ -3,6 +3,11 @@
 #include <duckdb.hpp>
 #include <Python.h>
 #include <iostream>
+#include <pybind11/pybind11.h>
+#include <pybind11/eval.h>
+
+namespace py = pybind11;
+
 
 namespace pyudf {
 
@@ -158,20 +163,8 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 }
 
 PyObject *pyObjectToIterable(PyObject *py_object) {
-	PyObject *collections_module = PyImport_ImportModule("collections.abc");
-	if (!collections_module) {
-		return nullptr;
-	}
-
-	PyObject *iterable_class = PyObject_GetAttrString(collections_module, "Iterable");
-	if (!iterable_class) {
-		Py_DECREF(collections_module);
-		return nullptr;
-	}
-
-	int is_iterable = PyObject_IsInstance(py_object, iterable_class);
-	Py_DECREF(iterable_class);
-	Py_DECREF(collections_module);
+	auto iterable_class = py::module_::import("collections.abc").attr("Iterable");
+        int is_iterable = py::isinstance(py_object, iterable_class);
 
 	if (!is_iterable) {
 		PyErr_SetString(PyExc_TypeError, "Input must be an iterable or an object that can be iterated upon");
@@ -185,6 +178,12 @@ PyObject *pyObjectToIterable(PyObject *py_object) {
 
 	return py_iter;
 }
+
+bool isIterable(pybind11::handle pyObject) {
+  auto Iterable = py::module_::import("collections.abc").attr("Iterable");
+  return py::isinstance(pyObject, Iterable);
+}
+
 
 PyObject *StructToDict(duckdb::Value value) {
 	// Build the keyword argument dictionary
@@ -201,6 +200,23 @@ PyObject *StructToDict(duckdb::Value value) {
 		PyDict_SetItem(py_value, pyName, pyValue);
 	}
 	return py_value;
+}
+
+py::dict StructToBindDict(duckdb::Value value) {
+  py::dict pymap;
+
+	auto &child_type = value.type();
+	auto &struct_children = duckdb::StructValue::GetChildren(value);
+	D_ASSERT(duckdb::StructType::GetChildCount(child_type) == struct_children.size());
+	for (idx_t i = 0; i < struct_children.size(); i++) {
+		duckdb::Value name = duckdb::StructType::GetChildName(child_type, i);
+		duckdb::Value val = struct_children[i];
+
+		auto pyName = duckdb_to_py(name);
+		auto pyValue = duckdb_to_py(val);
+                pymap[pyName] = pyValue;
+	}
+	return pymap;
 }
 
 } // namespace pyudf

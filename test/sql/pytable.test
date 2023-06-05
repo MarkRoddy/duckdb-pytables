@@ -26,14 +26,14 @@ hello	my	friend
 statement error
 select * FROM pytable('udfsss:table', 'Jane', columns={'columnA': 'VARCHAR'});
 ----
-Invalid Error: Failed to import module: udfsss
+Invalid Error: ModuleNotFoundError: No module named 'udfsss'
 
 
 # Correctly handle when a function does not exist
 statement error
 select * FROM pytable('udfs:tablesssss', 'Jane', columns={'columnA': 'VARCHAR'});
 ----
-Invalid Error: Failed to find function: tablesssss
+Invalid Error: AttributeError: module 'udfs' has no attribute 'tablesssss'
 
 
 # Confirm the extension works
@@ -96,7 +96,7 @@ SELECT columnA, columnB FROM pytable('udfs:index_chars', 'foo', columns={'column
 statement error
 SELECT * FROM pytable('udfs:table_throws_exception', 'foo', columns={'columnA': 'VARCHAR'});
 ----
-Invalid Error: This function raises an exception
+Invalid Error: Exception: This function raises an exception
 
 
 
@@ -104,7 +104,7 @@ Invalid Error: This function raises an exception
 statement error
 SELECT * FROM pytable('udfs:iterator_throws_exception', 'foo', columns={'columnA': 'VARCHAR'});
 ----
-Invalid Error: Third record raises an exception
+Invalid Error: Exception: Third record raises an exception
 
 
 # Check handling when more columns are returned than expected
