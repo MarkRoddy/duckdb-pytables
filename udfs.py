@@ -70,6 +70,27 @@ def screaming_in_the_void():
     """Example function with no arguments for testing"""
     return table("foo bar")
 
+def ducktable(*columns):
+    class wrapper:
+        def __init__(self, func, columns):
+            self.func = func
+            self.cols = columns
+        def columns(self, *args, **kwargs):
+            return self.cols
+        def __call__(self, *args, **kwargs):
+            return self.func(*args, **kwargs)
+    def decorator(func):
+        d = wrapper(func, columns)
+        def inner(*args, **kwargs):
+            return d(*args, **kwargs)
+        return inner
+    return decorator
+
+@ddbtable('count', 'character')
+def wrapped_index_chars(input):
+    return index_chars(input)
+
+
 import unittest
 
 class TestUdfs(unittest.TestCase):

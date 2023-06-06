@@ -106,3 +106,12 @@ r
 i
 n
 g
+
+
+# Handle a return type annotated function and no columns argument
+query II
+SELECT columnA, columnB FROM pytable('udfs:annotated_index_chars', 'foo')
+----
+0	f
+1	o
+2 	o
