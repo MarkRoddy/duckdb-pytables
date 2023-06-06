@@ -108,10 +108,14 @@ n
 g
 
 
-# Handle a return type annotated function and no columns argument
+# Call without 'columns' that specifies column names via a decorator, but no types
 query II
 SELECT columnA, columnB FROM pytable('udfs:annotated_index_chars', 'foo')
 ----
 0	f
 1	o
 2 	o
+
+# Call without 'columns' that specifies column names and types via a decorator
+# Call without 'columns' that specifies types via type hints, no column names
+# Call without 'columns' that specifies types via type hints, column names via decorator
