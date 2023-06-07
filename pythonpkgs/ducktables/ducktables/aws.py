@@ -5,8 +5,8 @@ import boto3
 def ec2_instances():
     """
     SQL Usage:
-    SELECT * FROM python_table('aws', 'ec2_instances',
-      {
+    SELECT * FROM pytable('aws:ec2_instances',
+      columns = {
         'instance_id': 'VARCHAR',
         'name': 'VARCHAR',
         'instance_type': 'VARCHAR',
@@ -20,7 +20,7 @@ def ec2_instances():
         'public_ip': 'VARCHAR',
         'private_dns': 'VARCHAR',
         'private_ip': 'VARCHAR'
-        }, []);
+        });
     """
     def response_to_rows(response):
         for resv in response['Reservations']:
@@ -63,7 +63,7 @@ def ec2_instances():
 def s3_buckets():
     """
     SQL Usage:
-    SELECT * FROM python_table('aws', 's3_buckets', {'name': 'VARCHAR', 'creation_date': 'VARCHAR'}, []);
+    SELECT * FROM pytable('aws:s3_buckets', columns={'name': 'VARCHAR', 'creation_date': 'VARCHAR'});
     """
     client = boto3.client('s3')
     response = client.list_buckets()
@@ -74,9 +74,9 @@ def s3_buckets():
 def s3_objects(bucket, prefix = None):
     """
     SQL Usage:
-    SELECT * FROM python_table('aws', 's3_objects',
-      { 'key': 'VARCHAR', 'last_modified': 'VARCHAR', 'size': 'INT', 'storage_class': 'VARCHAR'},
-      ['bucket-name', 'foo/bar/prefix']);
+    SELECT * FROM pytable('aws:s3_objects', 'bucket-name', 'foo/bar/prefix',
+      columns = { 'key': 'VARCHAR', 'last_modified': 'VARCHAR', 'size': 'INT', 'storage_class': 'VARCHAR'}
+    );
 
     Note that the final prefix argument is optional, and you don't need to specify it in
     your SQL query. To list all objects:
