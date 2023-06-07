@@ -94,6 +94,7 @@ post-release-integration:
 	docker run --rm --interactive post-release-integration
 
 all-post-release-integration:
+	if [ -z "$(GITHUB_ACCESS_TOKEN)" ]; then echo "Missing GITHUB_ACCESS_TOKEN needed for testing"; exit 1; fi
 	$(MAKE) PYTHON_VERSION=3.8 post-release-integration test-installer
 	$(MAKE) PYTHON_VERSION=3.9 post-release-integration test-installer
 	$(MAKE) PYTHON_VERSION=3.10 post-release-integration test-installer

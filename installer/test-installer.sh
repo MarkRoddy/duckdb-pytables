@@ -71,6 +71,7 @@ else
 fi
 
 status "Installing libpython"
+apt-get update -y # containers apt copies may be out of date depending on when it was built
 apt-get install -y -qq libpython${PYTHON_VERSION}
 
 status "Installation should now work but our warning is still present as script is unable to find it"
