@@ -9,9 +9,9 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 def prompt(input_phrase, num_responses = 5):
     """
     SQL Usage:
-    SELECT * FROM pytable('chatgpt', 'prompt',
-      {'index': 'INT','message': 'VARCHAR', 'message_role': 'VARCHAR', 'finish_reason': 'VARCHAR'},
-      ['Write a limerick poem about how much you love SQL', 2]);
+    SELECT * FROM pytable('chatgpt:prompt', 'Write a limerick poem about how much you love SQL', 2,
+      columns = {'index': 'INT','message': 'VARCHAR', 'message_role': 'VARCHAR', 'finish_reason': 'VARCHAR'},
+    );
     """
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
