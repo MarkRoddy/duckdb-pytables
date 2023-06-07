@@ -9,10 +9,11 @@ DuckTables is Python library that provides out of the box functions for the [Duc
 pip install ducktables
 ```
 
-# Configuring Authentication
+# Authentication
+DuckTables interacts with a number of different services, and each has their own authentication and configuration mechanism. Note that you only have to configure the services that you plan on using.
 
 ## AWS
-Follow the [auth instructions](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration) for Boto3, the that ducktables uses to interface with AWS apis. Note that if you're already using boto3 or the AWS CLI, your existing authentication configuration should be utilized.
+Follow the [auth instructions](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration) for Boto3, the library that ducktables uses to interface with AWS apis. Note that if you're already using boto3 or the AWS CLI, your existing authentication configuration will be utilized, and you don't need to do anything.
 
 ## Github
 When starting your DuckDB client (such as the DuckDB cli), set an environment variable named `GITHUB_ACCESS_TOKEN`. From the command line, this will look like:
@@ -40,9 +41,12 @@ GOOGLE_APPLICATION_CREDENTIALS=~/.gcloud/some-file.json duckdb -unsigned
 ```
 
 # Example Queries
+These queries assume you've already installed the [PyTables](https://github.com/MarkRoddy/duckdb-pytables) extension in a DuckDB session. See the extensions [installation guide](https://github.com/MarkRoddy/duckdb-pytables#installation) if you have not.
 
 ## AWS
+Note that all queries will assume to run in the region you have specified in your configuration file. Set the `AWS_DEFAULT_REGION` to override this behavior.
 ### EC2 Instances
+Returns the results of a [DescribeInstances](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html) API call.
 ```sql
     SELECT * FROM pytable('aws:ec2_instances',
       columns = {
@@ -63,6 +67,7 @@ GOOGLE_APPLICATION_CREDENTIALS=~/.gcloud/some-file.json duckdb -unsigned
 ```
 
 ### S3 Buckets
+Returns the results of a [ListBuckets](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html) API call.
 ```SQL
 SELECT * FROM pytable('aws:s3_buckets', 
   columns={'name': 'VARCHAR', 'creation_date': 'VARCHAR'}
@@ -80,7 +85,7 @@ SELECT * FROM pytable('aws:s3_objects', 'bucket-name', 'foo/bar/prefix',
 ```
 
 ## Github
-
+Enumerates all repositories for the named user or organization.
 ```SQL
 SELECT * FROM pytable('ghub:repos_for', 'duckdb',
   columns = {'repo': 'VARCHAR', 'description': 'VARCHAR', 'language': 'VARCHAR'}
