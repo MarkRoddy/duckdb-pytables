@@ -8,6 +8,7 @@
 #include <pytable.hpp>
 #include "python_function.hpp"
 #include <pyconvert.hpp>
+#include <pyfunciterator.hpp>
 
 #include <typeinfo>
 
@@ -16,17 +17,29 @@ using namespace duckdb;
 namespace pyudf {
 
 struct PyScanBindData : public TableFunctionData {
-	// Function arguments coerced to a tuple used in Python calling semantics,
-	PyObject *arguments;
+  std::string module_name;
+  std::string function_name;
 
-	// Keyword arguments coerced to a dict to be used in **kwarg calling semantics
-	PyObject *kwargs;
+  std::vector<Value> sql_arguments;
+  std::vector<LogicalType> return_types;
+  
+  // Function arguments coerced to a tuple used in Python calling semantics,
+  PyObject *py_args;
 
-	std::vector<LogicalType> return_types;
+  // Keyword arguments coerced to a dict to be used in **kwarg calling semantics
+  PyObject *py_kwargs;
 
-	// Return value of the function specified
-	// PyObject *function_result_iterable;
-	pybind11::iterator function_result;
+  // Return value of the function specified
+  // PyObject *function_result_iterable;
+
+  // todo: add a wrapper around the function that will lazy import the function and
+  // has hte option to peak at hte first value (values?) to be used if no `columns
+  // argument is specified.
+
+  // todo: move to 'PyScanGlobalState'
+  PyFuncIterator iterable_function;
+  // pybind11::iterator function_result;
+  
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -34,6 +47,7 @@ struct PyScanLocalState : public LocalTableFunctionState {
 };
 
 struct PyScanGlobalState : public GlobalTableFunctionState {
+
 	PyScanGlobalState() : GlobalTableFunctionState() {
 	}
 };
@@ -53,20 +67,15 @@ void FinalizePyTable(PyScanBindData &bind_data) {
 
 void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output) {
 	auto &bind_data = (PyScanBindData &)*data.bind_data;
-
 	auto &local_state = (PyScanLocalState &)*data.local_state;
-
 	if (local_state.done) {
 		return;
 	}
-
-	auto it = bind_data.function_result;
-
-	// PyObject *row;
+	auto it = bind_data.iterable_function;
 	int read_records = 0;
         py::iterator end = py::iterator::sentinel();
         for (read_records = 0; read_records < STANDARD_VECTOR_SIZE && it != end; ++read_records) {
-          auto row = *it;
+                auto row = *it;
                 if(!isIterable(row)) {
                   // todo: cleanup?
                   throw std::runtime_error("Error: Row record not iterable as expected");
@@ -78,35 +87,16 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
                 ConvertPyObjectsToDuckDBValues(iter_row.ptr(), bind_data.return_types, duck_row);
                 for (long unsigned int i = 0; i < duck_row.size(); i++) {
                   auto v = duck_row.at(i);
-                  // todo: Am I doing this correctly? I have no idea.
                   output.SetValue(i, output.size(), v);
                 }
-                // Py_DECREF(row);
                 output.SetCardinality(output.size() + 1);
-                // read_records++;
-                // if (!(read_records < STANDARD_VECTOR_SIZE)) {
-                //   break;
-                // }
-
-                // Increment the iterator separately as this may resume a python function
-                // and we'll need to handle this error (todo: add error handling)
-                ++it;
+                try {
+                  ++it;
+                } catch(py::error_already_set &e) {
+                  throw std::runtime_error(e.what());
+                }
 	}
 
-	// // PyIter_Next will return null if the iterator is exhausted or if an
-	// // exception has occurred during resumption of the underlying function,
-	// // so at this point we need to check which of these is the case.
-	// if (PyErr_Occurred()) {
-	// 	PythonException error = PythonException();
-
-	// 	// Shouldn't be necessary, but mark our scan as complete for good measure.
-	// 	local_state.done = true;
-
-	// 	// Clean everything up
-	// 	FinalizePyTable(bind_data);
-	// 	throw std::runtime_error(error.message);
-	// }
-	// if (!row) {
         if (it == end) {
 		// We've exhausted our iterator
 		local_state.done = true;
@@ -115,19 +105,13 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	}
 }
 
-unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
-                                std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
-	auto result = make_uniq<PyScanBindData>();
-	auto names_and_types = input.named_parameters["columns"];
 
+void ParseFunctionAndArguments(TableFunctionBindInput &input, unique_ptr<PyScanBindData> &state) {
 	auto params = input.named_parameters;
-	std::string module_name;
-	std::string function_name;
-	std::vector<Value> arguments;
 	if ((0 < params.count("module")) && (0 < params.count("func"))) {
-		module_name = input.named_parameters["module"].GetValue<std::string>();
-		function_name = input.named_parameters["func"].GetValue<std::string>();
-		arguments = input.inputs;
+		state->module_name = input.named_parameters["module"].GetValue<std::string>();
+		state->function_name = input.named_parameters["func"].GetValue<std::string>();
+		state->sql_arguments = input.inputs;
 	} else if ((0 == params.count("module")) && (0 == params.count("func"))) {
 		// Neither module nor func specified, infer this from arg list.
 		auto func_spec_value = input.inputs[0];
@@ -136,11 +120,11 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 			    "First argument must be string specifying 'module:func' if name parameters not supplied");
 		}
 		auto func_specifier = func_spec_value.GetValue<std::string>();
-		std::tie(module_name, function_name) = parse_func_specifier(func_specifier);
+		std::tie(state->module_name, state->function_name) = parse_func_specifier(func_specifier);
 
 		/* Since we had to infer our functions specifier from the argument list, we treat
 		   everything after the first argument as input to the python function. */
-		arguments = std::vector<Value>(input.inputs.begin() + 1, input.inputs.end());
+		state->sql_arguments = std::vector<Value>(input.inputs.begin() + 1, input.inputs.end());
 	} else if (0 < params.count("module")) {
 		throw InvalidInputException("Module specified w/o a corresponding function");
 	} else if (0 < params.count("func")) {
@@ -149,6 +133,27 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw InvalidInputException("I don't know how logic works");
 	}
 
+        // Now that we have our module name and function name, pull it out into our wrapper in case
+        // return type parsing needs to examine the function output
+        state->py_args = py::tuple(result->sql_arguments.size());
+        for (size_t i = 0; i < result->sql_arguments.size(); i++) {
+          pyargs[i] = duckdb_to_py(result->sql_arguments[i]);
+        }
+
+	if (0 < params.count("kwargs")) {
+		auto input_kwargs = params["kwargs"];
+		auto ik_type = input_kwargs.type().id();
+		if (ik_type != LogicalTypeId::STRUCT) {
+			throw InvalidInputException("kwargs must be a struct mapping argument names to values");
+		}
+                state->py_kwargs = StructToBindDict(input_kwargs);
+	}
+        result->iterable_function = new PyFuncIterator(state->module_name, state->function_name, state->py_args, state->py_kwargs);
+
+}
+
+void ParseNamesAndTypesFromArgument(ClientContext &context, Value names_and_types, std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
+	
 	auto &child_type = names_and_types.type();
 	if (child_type.id() != LogicalTypeId::STRUCT) {
 		throw InvalidInputException("columns requires a struct mapping column names to data types");
@@ -164,30 +169,21 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		}
 		return_types.emplace_back(TransformStringToLogicalType(StringValue::Get(val), context));
 	}
+}  
+unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
+                                std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
+        auto result = make_uniq<PyScanBindData>();
+        ParseFunctionAndArguments(input, result);
+
+
+        auto names_and_types = input.named_parameters["columns"];
+        ParseNamesAndTypesFromArgument(context, names_and_types, return_types, names);                               
 	if (names.empty()) {
 		throw BinderException("require at least a single column as input!");
 	}
-
 	result->return_types = std::vector<LogicalType>(return_types);
 
-        // auto iterable_class = py::module_::import("collections.abc").attr("Iterable");
-        auto module = py::module_::import(module_name.c_str());
-        auto func = module.attr(function_name.c_str());
-        py::tuple pyargs(arguments.size());
-        for (size_t i = 0; i < arguments.size(); i++) {
-          pyargs[i] = duckdb_to_py(arguments[i]);
-        }
-
-        py::dict pykwargs;
-	if (0 < params.count("kwargs")) {
-		auto input_kwargs = params["kwargs"];
-		auto ik_type = input_kwargs.type().id();
-		if (ik_type != LogicalTypeId::STRUCT) {
-			throw InvalidInputException("kwargs must be a struct mapping argument names to values");
-		}
-                pykwargs = StructToBindDict(input_kwargs);
-	}
-
+        
         // Call the Python function with the arguments
         // py::object result = my_func(arg1, arg2, **kwargs);
         py::object funcresult = func(*pyargs, **pykwargs);
@@ -205,7 +201,7 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	// 	Py_XDECREF(iter);
 	// 	throw std::runtime_error("Error: function '" + func.function_name() + "' did not return an iterator\n");
 	// }
-	result->function_result = py::iter(funcresult);
+	// result->function_result = py::iter(funcresult);
 	return std::move(result);
 }
 
