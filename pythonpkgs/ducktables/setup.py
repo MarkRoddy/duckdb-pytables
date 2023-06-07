@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
    
 setup(
     name='ducktables',
-    version='0.1.2',
+    version=version_str,
     description='Python Table Functions for DuckDB',
     packages=find_packages(),
     install_requires=open('requirements.txt').read().splitlines(),
