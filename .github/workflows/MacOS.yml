@@ -19,7 +19,7 @@ jobs:
         python_version: ['3.8', '3.9', '3.10', '3.11']
 
     env:
-      OSX_BUILD_UNIVERSAL: 1
+      OSX_BUILD_UNIVERSAL: 0
       GEN: ninja
       PYTHON_VERSION: ${{ matrix.python_version }}
 
@@ -32,10 +32,9 @@ jobs:
       - name: Install Ninja
         run: brew install ninja
 
-      # - name: Install OpenSSL
-      #   run: |
-      #     arch -x86_64 brew install openssl@1.1
-      #     arch -x86_64 brew install python@${{ matrix.python_version }}
+      - name: Install OpenSSL
+        run: |
+          brew install openssl@3.0.5
           
       #     brew install openssl
       #     arch -arm64 brew install openssl@1.1
@@ -44,25 +43,25 @@ jobs:
         with:
           python-version: '${{ matrix.python_version }}'
 
-      - name: Install OpenSSL
-        shell: bash
-        run: |
-          mkdir -p build/openssl
-          cd build/openssl
-          mkdir sources build
-          curl https://www.openssl.org/source/openssl-3.0.5.tar.gz | tar xv -C sources --strip-components 1
-          export OPENSSL_ROOT_DIR=`pwd`/build
-          cd sources
-          export CC="clang -arch x86_64 -arch arm64"
-          perl ./Configure --prefix=$OPENSSL_ROOT_DIR darwin64-x86_64-cc no-asm
-          make -j
-          make install_sw
+      # - name: Install OpenSSL
+      #   shell: bash
+      #   run: |
+      #     mkdir -p build/openssl
+      #     cd build/openssl
+      #     mkdir sources build
+      #     curl https://www.openssl.org/source/openssl-3.0.5.tar.gz | tar xv -C sources --strip-components 1
+      #     export OPENSSL_ROOT_DIR=`pwd`/build
+      #     cd sources
+      #     export CC="clang -arch x86_64 -arch arm64"
+      #     perl ./Configure --prefix=$OPENSSL_ROOT_DIR darwin64-x86_64-cc no-asm
+      #     make -j
+      #     make install_sw
 
-      - name: Get OpenSSL path
-        shell: bash
-        run: |
-          export OPENSSL_ROOT_DIR=`pwd`/build/openssl/build
-          echo "OPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR" >> $GITHUB_ENV
+      # - name: Get OpenSSL path
+      #   shell: bash
+      #   run: |
+      #     export OPENSSL_ROOT_DIR=`pwd`/build/openssl/build
+      #     echo "OPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR" >> $GITHUB_ENV
 
       - name: Checkout DuckDB to version
         if: ${{ matrix.duckdb_version != '<submodule_version>'}}
