@@ -20,10 +20,11 @@ jobs:
         # todo: only reducing matrix for debugging
         python_version: ['3.8']
         # DEBUG DEBUG DEBUG
-        arch: ['osx_amd64', 'osx_arm64']
+        arch: ['amd64', 'arm64']
 
     env:
       OSX_BUILD_UNIVERSAL: 0
+      OSX_TARGET_ARCH: ${{ matrix.arch }}
       GEN: ninja
       PYTHON_VERSION: ${{ matrix.python_version }}
 
