@@ -16,7 +16,11 @@ jobs:
       matrix:
         # Add commits/tags to build against other DuckDB versions
         duckdb_version: [ '<submodule_version>' ]
-        python_version: ['3.8', '3.9', '3.10', '3.11']
+        # python_version: ['3.8', '3.9', '3.10', '3.11']
+        # todo: only reducing matrix for debugging
+        python_version: ['3.8']
+        # DEBUG DEBUG DEBUG
+        arch: ['osx_amd64', 'osx_arm64']
 
     env:
       OSX_BUILD_UNIVERSAL: 0
