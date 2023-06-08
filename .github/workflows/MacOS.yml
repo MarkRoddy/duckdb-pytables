@@ -34,7 +34,7 @@ jobs:
 
       - name: Install OpenSSL
         run: |
-          brew install openssl@3.0.5
+          brew install openssl@3.0
           
       #     brew install openssl
       #     arch -arm64 brew install openssl@1.1
