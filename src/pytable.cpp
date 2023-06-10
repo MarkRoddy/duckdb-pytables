@@ -8,7 +8,9 @@
 #include <pytable.hpp>
 #include "python_function.hpp"
 #include <pyconvert.hpp>
-#include <pyfunciterator.hpp>
+// #include <pyfunciterator.hpp>
+#include <peekableiterator.hpp>
+#include <pydeferred_function_call.hpp>
 
 #include <typeinfo>
 
@@ -37,9 +39,13 @@ struct PyScanBindData : public TableFunctionData {
   // argument is specified.
 
   // todo: move to 'PyScanGlobalState'
-  PyFuncIterator iterable_function;
+  // PyFuncIterator iterable_function;
   // pybind11::iterator function_result;
-  
+
+  // Iterable returned by our function call. The function call may or may not
+  // have already happened depending on whether or not we needed to peak at
+  // the return values to figure out our column types.
+  PeekableIterator<PyDeferredFunctionCall::ResultIterator<py::handle>> function_result;
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -71,9 +77,9 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	if (local_state.done) {
 		return;
 	}
-	auto it = bind_data.iterable_function;
-	int read_records = 0;
-        py::iterator end = py::iterator::sentinel();
+        int read_records = 0;
+	auto it = bind_data.function_result;
+        auto end = it.end();
         for (read_records = 0; read_records < STANDARD_VECTOR_SIZE && it != end; ++read_records) {
                 auto row = *it;
                 if(!isIterable(row)) {
@@ -148,7 +154,12 @@ void ParseFunctionAndArguments(TableFunctionBindInput &input, unique_ptr<PyScanB
 		}
                 state->py_kwargs = StructToBindDict(input_kwargs);
 	}
-        result->iterable_function = new PyFuncIterator(state->module_name, state->function_name, state->py_args, state->py_kwargs);
+          // PeekableIterator<PyDeferredFunctionCall::ResultIterator<py::handle>> function_result;
+        // PyDeferredFunctionCall(std::string module_name, std::string func_name, py::tuple args, py::dict kwargs) {
+        PyDeferredFunctionCall defered_func = new PyDeferredFunctionCall(state->module_name, state->function_name, state->py_args, state->py_kwargs);
+        result->function_result = PeekableIterator<PyDeferredFunctionCall::ResultIterator<py::handle>>(defered_func.begin());
+        //                        auto defered_func 
+        // result->iterable_function = new PyFuncIterator(state->module_name, state->function_name, state->py_args, state->py_kwargs);
 
 }
 

@@ -27,6 +27,16 @@ public:
 		return module_name_;
 	}
 
+  class IterableResult {
+    IterableResult(py::tuple args, py::dict kwargs);
+    IterableResult& operator++();
+    std::vector<py::handle> peak(int num);
+    friend bool operator!=(const IterableResult& a, const IterableResult& b);   
+  }
+
+  IterableResult begin();
+  IterableResult end();
+
 private:
 	void init(const std::string &module_name, const std::string &function_name);
 	std::string module_name_;

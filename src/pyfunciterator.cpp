@@ -3,14 +3,19 @@
 
 namespace py = pybind11;
 
+
+
+
 class PyFuncIterator {
   py::handle py_module;
   py::handle py_function;
   py::handle py_args;
   py::handle py_kwargs;
+
+  
   py::iterator py_iterator;
   std::queue<py::handle> peak_queue;
-  bool iterator_exhausted = false;
+  bool py_iterator_exhausted = false;
 
 public:
   PyFuncIterator(std::string module_name, std::string func_name,
@@ -58,6 +63,17 @@ public:
     return *py_iterator;
   }
 
+  // /home/mark/development/duckdb-python-udf/src/pytable.cpp:77:74: error: no match for ‘operator!=’ (operand types are ‘pyudf::PyFuncIterator’ and ‘pybind11::iterator’)
+  // boolean operator!=(py::iterator it) {
+  //   return it == 
+  // }
+  friend bool operator!=(const PyFuncIterator& a, const PyFuncIterator& b) {
+    return a != b;
+    // TODO: Implement
+    // return false;
+  }
+
+  PyFuncIterator
 private:
   void ensure_func_called() {
     if (!py_iterator) {
