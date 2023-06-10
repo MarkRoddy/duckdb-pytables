@@ -6,11 +6,11 @@ echo "Entering python land..."
 cd pythonpkgs/
 
 echo "Checking that we have a python..."
-which python3.9
+which python3.8
 
 # Create a virtual environment
 echo "Creating our virtual environment"
-python3.9 -m venv myenv
+python3.8 -m venv myenv
 echo "Sourcing the env"
 source myenv/bin/activate
 
@@ -22,7 +22,7 @@ pip install --upgrade pip
 pip install wheel
 
 
-python3.9 setup.py sdist bdist_wheel
+python3.8 setup.py sdist bdist_wheel
 
 
 # Install Twine to interact with PyPi
