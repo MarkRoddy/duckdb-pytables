@@ -5,7 +5,7 @@ all: release
 
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJ_DIR := $(dir $(MKFILE_PATH))
-PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.9)
+PYTHON_VERSION := $(if $(PYTHON_VERSION),$(PYTHON_VERSION),3.8)
 EXTENSION_VERSION := $(shell cat pythonpkgs/ducktables/version.txt)
 DUCKDB_VERSION := $(if $(DUCKDB_VERSION),$(DUCKDB_VERSION),0.8.0)
 
@@ -71,6 +71,7 @@ python-test-integration:
 
 # Tests a build of the extension against a download of DuckDB
 extension-integration-tests:
+	if [ -z "$(GITHUB_ACCESS_TOKEN)" ]; then echo "Missing GITHUB_ACCESS_TOKEN needed for testing"; exit 1; fi
 	cp pythonpkgs/ducktables/dist/ducktables-$(EXTENSION_VERSION)-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/pytables/pytables.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
