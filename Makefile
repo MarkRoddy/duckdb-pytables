@@ -59,6 +59,11 @@ extension-release:
 extension-debug:
 	cmake --build build/debug --config Debug
 
+python-tests:
+	. pythonpkgs/myenv/bin/activate && \
+	cd pythonpkgs/ducktables && \
+	python -m unittest discover -s tests/ducktables/
+
 python-ci: ./scripts/python-ci.sh
 	bash ./scripts/python-ci.sh
 
