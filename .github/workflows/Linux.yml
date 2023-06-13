@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         # Add commits/tags to build against other DuckDB versions
-        duckdb_version: ['0.8.0', '0.8.1']
+        duckdb_version: ['v0.8.0', 'v0.8.1']
         python_version: ['3.8', '3.9', '3.10', '3.11']
         # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
         arch: ['linux_amd64']
@@ -81,7 +81,7 @@ jobs:
         path: |
           build/
           ~/.ccache/
-        key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
+        key: duckdb-${{ matrix.duckdb_version }}-${{ matrix.arch }}
         
     - name: Checkout DuckDB to version
       if: ${{ matrix.duckdb_version != '<submodule_version>'}}
