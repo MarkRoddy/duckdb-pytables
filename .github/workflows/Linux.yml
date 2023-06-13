@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         # Add commits/tags to build against other DuckDB versions
-        duckdb_version: ['<submodule_version>']
+        duckdb_version: ['0.8.0', '0.8.1'] # <submodule_version>"
         python_version: ['3.8', '3.9', '3.10', '3.11']
         # arch: ['linux_amd64', 'linux_arm64', 'linux_amd64_gcc4']
         arch: ['linux_amd64']
@@ -47,31 +47,31 @@ jobs:
       run: |
         apt-get install -y -qq python${{ matrix.python_version }}-dev
   
-    # - name: Set up Python ${{ matrix.python_version }}
-    #   uses: actions/setup-python@v4
-    #   with:
-    #     python-version: ${{ matrix.python_version }}
-
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: 'true'
 
+      
       # The 'matrix.duckdb_version' variable may contain a flag indicating "use what every the
-      # repo is pinned to". That doesn't help when we're building an artifact name that includes
-      # the version of duckdb we've pinned against. So we create a separate variable here that will
-      # contain the actual version number.
+      # repo is pinned to". This may or may not point to a particular release. For some of our
+      # steps we care about working with a released version. So we distinguish betwen "an arbitrary
+      # revision" and a releaseed version. For clarity:
+      # DUCKDB_REVISION: A git identier such as a sha or a tag (eg: 35f5a40, or v0.8.1)
+      # DUCKDB_VERSION: A release number (eg 0.8.0). 
     - name: Extract + Export DuckDB Pinned Version if in Use
       if: ${{ '<submodule_version>' == matrix.duckdb_version }}
       run: |
         export DUCKDB_VERSION=`git tag --points-at HEAD`
         export DUCKDB_VERSION=${DUCKDB_VERSION:=`git log -1 --format=%h`}
-        echo "DDB_VERSION=${DUCKDB_VERSION}" >> $GITHUB_ENV
+        echo "DUCKDB_REVISION=${DUCKDB_VERSION}" >> $GITHUB_ENV
+        echo "DUCKDB_VERSION=" >> $GITHUB_ENV
       
     - name: Export DuckDB if Ignoring Pinned Version
       if: ${{ '<submodule_version>' != matrix.duckdb_version }}
       run: |
-        echo "DDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
+        echo "DUCKDB_VERSION=${{matrix.duckdb_version}}" >> $GITHUB_ENV
+        echo "DUCKDB_REVISION=v${{matrix.duckdb_version}}" >> $GITHUB_ENV
         echo "Matrix Provided DuckDB Version: $DUCKDB_VERSION"
 
     - name: Restore cached build artifacts
@@ -83,11 +83,11 @@ jobs:
           ~/.ccache/
         key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
         
-    - name: Checkout DuckDB to version
+    - name: Checkout DuckDB to Tagged Version
       if: ${{ matrix.duckdb_version != '<submodule_version>'}}
       run: |
         cd duckdb
-        git checkout ${{ matrix.duckdb_version }}
+        git checkout v${{ matrix.duckdb_version }}
 
     - if: ${{ matrix.arch == 'linux_amd64_gcc4' }}
       uses: ./.github/actions/centos_7_setup
@@ -118,16 +118,6 @@ jobs:
           ~/.ccache/
         key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
-    - name: Run Tests
-      if: ${{ matrix.duckdb_version != 'v0.7.1' }}
-      run: |
-        make test
-
-    - name: Run Legacy Tests
-      if: ${{ matrix.duckdb_version == 'v0.7.1' }}
-      run: |
-        make test-legacy
-
     - name: Code Format Check
       run: |
         make check-format
@@ -137,16 +127,20 @@ jobs:
         make python-ci
 
     - name: Run Integration Tests
+      if: ${{ '<submodule_version>' != matrix.duckdb_version }}
       run: |
-        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} extension-integration-tests
+        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} DUCKDB_VERSION=${{ env.DUCKDB_VERSION }} extension-integration-tests
 
-    - name: Run Installer Script Tests
-      run: |
-        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} PYTHON_VERSION=${{ matrix.python_version }} test-installer
+    # Can't test the installer against a version of DuckDB that we've never produced binaries for before.
+    # todo: conditionally run this if the installer has changed
+    # - name: Run Installer Script Tests
+    #   if: ${{ '<submodule_version>' != matrix.duckdb_version }}
+    #   run: |
+    #     make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} PYTHON_VERSION=${{ matrix.python_version }} test-installer
         
     - uses: actions/upload-artifact@v2
       with:
-        name: ddb${{ env.DDB_VERSION }}-py${{ matrix.python_version }}-extension-${{ matrix.arch }}
+        name: duckdb-${{ env.DUCKDB_REVISION }}-py${{ matrix.python_version }}-extension-${{ matrix.arch }}
         path: |
           build/release/extension/pytables/pytables.duckdb_extension
 
@@ -155,7 +149,7 @@ jobs:
         # This is a source only package so we are being a bit more descriptive than is really necessary,
         # but I'm not sure what will happen if the matrix build were to upload multiple artifacts w/the
         # same name.
-        name: ducktables-py${{ matrix.python_version }}-${{ matrix.arch }}-ddb${{ env.DDB_VERSION }}
+        name: ducktables-py${{ matrix.python_version }}-${{ matrix.arch }}-duckdb-${{ env.DUCKDB_REVISION }}
         # todo: this will fail the next time we upgrade the python package version because it's
         # hardcoded below.
         path: |

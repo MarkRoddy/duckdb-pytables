@@ -8,13 +8,16 @@ ARG PLATFORM=amd64
 ARG OS_PLATFORM=${OS}_${PLATFORM}
 
 # Confirm our "required" arguments have values
-RUN test -n "$EXTENSION_VERSION" && test -n "$DUCKDB_VERSION"
+RUN test -n "$EXTENSION_VERSION" && test -n "$DUCKDB_VERSION" && \
+    echo "Extension: $EXTENSION_VERSION" && \
+    echo "DuckDB: $DUCKDB_VERSION"
 
 # Install DuckDB
 RUN curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-${OS}-${PLATFORM}.zip" && \
     unzip -d /tmp/ /tmp/duckdb_cli.zip  && \
     mv /tmp/duckdb /usr/bin/duckdb && \
-    rm /tmp/duckdb_cli.zip
+    rm /tmp/duckdb_cli.zip && \
+    duckdb --version
 
 # Install the Python Helper Library, assumes the wheel has been copied to our cwd
 COPY ducktables-${EXTENSION_VERSION}-py3-none-any.whl /tmp
