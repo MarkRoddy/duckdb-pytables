@@ -47,11 +47,6 @@ jobs:
       run: |
         apt-get install -y -qq python${{ matrix.python_version }}-dev
   
-    # - name: Set up Python ${{ matrix.python_version }}
-    #   uses: actions/setup-python@v4
-    #   with:
-    #     python-version: ${{ matrix.python_version }}
-
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
@@ -137,6 +132,7 @@ jobs:
         make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} DUCKDB_VERSION=${{ env.DUCKDB_VERSION }} extension-integration-tests
 
     # Can't test the installer against a version of DuckDB that we've never produced binaries for before.
+    # todo: conditionally run this if the installer has changed
     # - name: Run Installer Script Tests
     #   if: ${{ '<submodule_version>' != matrix.duckdb_version }}
     #   run: |
