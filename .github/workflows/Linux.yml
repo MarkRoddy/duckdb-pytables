@@ -136,10 +136,11 @@ jobs:
       run: |
         make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} DUCKDB_VERSION=${{ env.DUCKDB_VERSION }} extension-integration-tests
 
-    - name: Run Installer Script Tests
-      if: ${{ '<submodule_version>' != matrix.duckdb_version }}
-      run: |
-        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} PYTHON_VERSION=${{ matrix.python_version }} test-installer
+    # Can't test the installer against a version of DuckDB that we've never produced binaries for before.
+    # - name: Run Installer Script Tests
+    #   if: ${{ '<submodule_version>' != matrix.duckdb_version }}
+    #   run: |
+    #     make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} PYTHON_VERSION=${{ matrix.python_version }} test-installer
         
     - uses: actions/upload-artifact@v2
       with:
