@@ -29,10 +29,14 @@ public:
 
 private:
 	void init(const std::string &module_name, const std::string &function_name);
+  PyObject * wrap_function(PyObject *function);
+  PyObject * import_decorator();
+  PyObject * load_internal_decorator();
 	std::string module_name_;
 	std::string function_name_;
 	PyObject *module;
 	PyObject *function;
+        PyObject *wrapped_function;
 };
 
 } // namespace pyudf

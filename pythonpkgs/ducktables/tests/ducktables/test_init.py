@@ -21,9 +21,12 @@ class TestDuckTableSchemaWrapper(TestCase):
         def no_types(input):
             return index_chars(input)
 
-        columns = no_types.columns()
-        self.assertIsNone(columns)
+        column_types = no_types.column_types()
+        self.assertIsNone(column_types)
 
+        col_names = no_types.column_names()
+        self.assertIsNone(col_names)
+        
         rows = list(no_types('foo'))
         expected_rows = [
             (0, 'f'),
@@ -38,12 +41,13 @@ class TestDuckTableSchemaWrapper(TestCase):
         def some_types(input) -> Iterator[Tuple[int, str]]:
             return index_chars(input)
 
-        actual_columns = some_types.columns()
-        expected_columns = {
-            'column1': int,
-            'column2': str,
-            }
-        self.assertEqual(expected_columns, actual_columns)
+        actual_types = some_types.column_types()
+        expected_types = [int, str]
+        self.assertEqual(expected_types, actual_types)
+
+        actual_names = some_types.column_names()
+        expected_names = ['column1', 'column2']
+        self.assertEqual(expected_names, actual_names)
 
         rows = list(some_types('foo'))
         expected_rows = [
@@ -59,11 +63,8 @@ class TestDuckTableSchemaWrapper(TestCase):
         @ducktable
         def some_types(input) -> List[Tuple[int, str]]:
             return index_chars(input)
-        actual_columns = some_types.columns()
-        expected_columns = {
-            'column1': int,
-            'column2': str,
-            }
+        actual_columns = some_types.column_types()
+        expected_columns = [int, str]
         self.assertEqual(expected_columns, actual_columns)
 
     def test_return_type_annotation_tuple(self):
@@ -71,11 +72,8 @@ class TestDuckTableSchemaWrapper(TestCase):
         @ducktable
         def some_types(input) -> Tuple[Tuple[int, str]]:
             return index_chars(input)
-        actual_columns = some_types.columns()
-        expected_columns = {
-            'column1': int,
-            'column2': str,
-            }
+        actual_columns = some_types.column_types()
+        expected_columns = [int, str]
         self.assertEqual(expected_columns, actual_columns)
 
     def test_return_type_annotation_invalid(self):
@@ -84,7 +82,7 @@ class TestDuckTableSchemaWrapper(TestCase):
         @ducktable
         def some_types(input) -> Dict[int, str]:
             return index_chars(input)
-        actual_columns = some_types.columns()
+        actual_columns = some_types.column_types()
         expected_columns = None
         self.assertEqual(expected_columns, actual_columns)
 
@@ -93,6 +91,6 @@ class TestDuckTableSchemaWrapper(TestCase):
         @ducktable
         def some_types(input) -> Iterator[int]:
             return index_chars(input)
-        actual_columns = some_types.columns()
+        actual_columns = some_types.column_types()
         expected_columns = None
         self.assertEqual(expected_columns, actual_columns)
