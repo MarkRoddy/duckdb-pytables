@@ -7,7 +7,9 @@
 #include <duckdb/parser/expression/function_expression.hpp>
 #include <pytable.hpp>
 #include "python_function.hpp"
+#include "python_table_function.hpp"
 #include <pyconvert.hpp>
+#include <log.hpp>
 
 #include <typeinfo>
 
@@ -25,6 +27,8 @@ struct PyScanBindData : public TableFunctionData {
 
 	// Return value of the function specified
 	PyObject *function_result_iterable;
+
+	pyudf::PythonTableFunction *pyfunc;
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -112,11 +116,8 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	}
 }
 
-unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
-                                std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
-	auto result = make_uniq<PyScanBindData>();
-	auto names_and_types = input.named_parameters["columns"];
-
+void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input,
+                           unique_ptr<PyScanBindData> &bind_data) {
 	auto params = input.named_parameters;
 	std::string module_name;
 	std::string function_name;
@@ -146,7 +147,60 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw InvalidInputException("I don't know how logic works");
 	}
 
+	bind_data->pyfunc = new pyudf::PythonTableFunction(module_name, function_name);
+	bind_data->arguments = duckdbs_to_pys(arguments);
+	if (NULL == bind_data->arguments) {
+		throw IOException("Failed coerce function arguments");
+	}
+
+	if (0 < params.count("kwargs")) {
+		auto input_kwargs = params["kwargs"];
+		auto ik_type = input_kwargs.type().id();
+		if (ik_type != LogicalTypeId::STRUCT) {
+			throw InvalidInputException("kwargs must be a struct mapping argument names to values");
+		}
+		bind_data->kwargs = duckdb_to_py(input_kwargs);
+	}
+}
+
+void PyBindColumnsAndTypes(ClientContext &context, TableFunctionBindInput &input, unique_ptr<PyScanBindData> &bind_data,
+                           std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
+	auto names_and_types = input.named_parameters["columns"];
 	auto &child_type = names_and_types.type();
+	if (names_and_types.IsNull()) {
+		// Check if we can grab from the function
+		auto types = bind_data->pyfunc->column_types(bind_data->arguments, bind_data->kwargs);
+		if (types.empty()) {
+			// todo: Add a URL to an article on writing Python functions once said article exists
+			auto errMsg = "You did not specify a 'columns' argument, and your Python function does not have type "
+			              "annotations (or they are incompatible)";
+			throw InvalidInputException(errMsg);
+		}
+		for (auto t : types) {
+			return_types.emplace_back(t);
+		}
+		auto colnames = bind_data->pyfunc->column_names(bind_data->arguments, bind_data->kwargs);
+		for (auto n : colnames) {
+			names.push_back(n);
+		}
+		if (return_types.size() != names.size()) {
+			// Show the names:
+			debug("Column Names:");
+			for (auto n : names) {
+				debug(n);
+			}
+			// Show the types:
+			debug("Column Types:");
+			for (auto t : types) {
+				debug(t.ToString());
+			}
+			throw InvalidInputException("Python function reported a mismatched number of column names and types");
+		} else if (0 == names.size()) {
+			throw InvalidInputException("Python function reported it contains zero columns");
+		}
+		bind_data->return_types = types;
+		return;
+	}
 	if (child_type.id() != LogicalTypeId::STRUCT) {
 		throw InvalidInputException("columns requires a struct mapping column names to data types");
 	}
@@ -164,27 +218,21 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	if (names.empty()) {
 		throw BinderException("require at least a single column as input!");
 	}
+	bind_data->return_types = std::vector<LogicalType>(return_types);
+}
 
-	result->return_types = std::vector<LogicalType>(return_types);
-	PythonFunction func = PythonFunction(module_name, function_name);
-	result->arguments = duckdbs_to_pys(arguments);
-	if (NULL == result->arguments) {
-		throw IOException("Failed coerce function arguments");
-	}
-
-	if (0 < params.count("kwargs")) {
-		auto input_kwargs = params["kwargs"];
-		auto ik_type = input_kwargs.type().id();
-		if (ik_type != LogicalTypeId::STRUCT) {
-			throw InvalidInputException("kwargs must be a struct mapping argument names to values");
-		}
-		result->kwargs = duckdb_to_py(input_kwargs);
-	}
+unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
+                                std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
+	auto result = make_uniq<PyScanBindData>();
+	PyBindFunctionAndArgs(context, input, result);
+	PyBindColumnsAndTypes(context, input, result, return_types, names);
+	debug("PyBindColumnsAndTypes: Num Column Names:" + to_string(names.size()));
+	debug("PyBindColumnsAndTypes: Num Column types:" + to_string(return_types.size()));
 
 	// Invoke the function and grab a copy of the iterable it returns.
 	PyObject *iter;
 	PythonException *error;
-	std::tie(iter, error) = func.call(result->arguments, result->kwargs);
+	std::tie(iter, error) = result->pyfunc->call(result->arguments, result->kwargs);
 	if (!iter) {
 		Py_XDECREF(iter);
 		std::string err = error->message;
@@ -192,7 +240,8 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw std::runtime_error(err);
 	} else if (!PyIter_Check(iter)) {
 		Py_XDECREF(iter);
-		throw std::runtime_error("Error: function '" + func.function_name() + "' did not return an iterator\n");
+		throw std::runtime_error("Error: function '" + result->pyfunc->function_name() +
+		                         "' did not return an iterator\n");
 	}
 	result->function_result_iterable = iter;
 	return std::move(result);
@@ -215,8 +264,8 @@ unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, 
 }
 
 unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
-	auto py_table_function =
-	    TableFunction("pytable", {}, PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
+	auto py_table_function = duckdb::TableFunction("pytable", {}, PyScan, (table_function_bind_t)PyBind,
+	                                               PyInitGlobalState, PyInitLocalState);
 
 	// todo: don't configure this for older versions of duckdb
 	py_table_function.varargs = LogicalType::ANY;

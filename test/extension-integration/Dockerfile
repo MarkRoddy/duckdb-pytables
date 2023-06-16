@@ -1,5 +1,19 @@
-ARG PYTHON_VERSION=3.9
-from python:${PYTHON_VERSION}
+FROM ubuntu:20.04
+
+RUN apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq keyboard-configuration && \
+    apt-get install -y -qq gettext-base curl unzip software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update -y
+
+ARG PYTHON_VERSION
+RUN test -n "$PYTHON_VERSION"
+RUN apt-get install -y -qq python${PYTHON_VERSION} libpython${PYTHON_VERSION} python${PYTHON_VERSION}-distutils && \
+    curl https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION} && \
+    python$PYTHON_VERSION -m pip install --upgrade pip
+
+# Confirm we have our expected version of python installed
+RUN python$PYTHON_VERSION --version
 
 ARG EXTENSION_VERSION
 ARG DUCKDB_VERSION
@@ -20,9 +34,8 @@ RUN curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/down
     duckdb --version
 
 # Install the Python Helper Library, assumes the wheel has been copied to our cwd
-COPY ducktables-${EXTENSION_VERSION}-py3-none-any.whl /tmp
-RUN python -m pip install --upgrade pip
-RUN pip install  /tmp/ducktables-${EXTENSION_VERSION}-py3-none-any.whl && \
+COPY ducktables-${EXTENSION_VERSION}-py3-none-any.whl /tmp    
+RUN python$PYTHON_VERSION -m pip install  /tmp/ducktables-${EXTENSION_VERSION}-py3-none-any.whl && \
     rm /tmp/ducktables-${EXTENSION_VERSION}-py3-none-any.whl
 
 # Install the UDF Extension, assumes the extension has been copied to our cwd

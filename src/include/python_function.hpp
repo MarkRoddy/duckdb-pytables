@@ -19,7 +19,6 @@ public:
 
 	std::pair<PyObject *, PythonException *> call(PyObject *args) const;
 	std::pair<PyObject *, PythonException *> call(PyObject *args, PyObject *kwargs) const;
-
 	std::string function_name() {
 		return function_name_;
 	}
@@ -27,12 +26,14 @@ public:
 		return module_name_;
 	}
 
-private:
+protected:
 	void init(const std::string &module_name, const std::string &function_name);
+	PyObject *function;
+
+private:
 	std::string module_name_;
 	std::string function_name_;
 	PyObject *module;
-	PyObject *function;
 };
 
 } // namespace pyudf

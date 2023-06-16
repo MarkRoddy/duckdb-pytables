@@ -1,0 +1,37 @@
+# name: test/sql/pytable_type_annotations.test
+# description: Review processing of Type Annotations for deriving a table functions schema
+# group: [pytables]
+
+# Require statement will ensure this test is run with this extension loaded
+require pytables
+
+
+# Don't need a 'columns' argument when a function has type annotations
+query II
+SELECT * FROM pytable('udfs:index_chars_types_annotated', 'foo')
+----
+0	f
+1	o
+2 	o
+
+# A 'columns' argument overrides type annotations, works even thought type annotation is invalid
+query II
+SELECT columnA, columnB FROM pytable('udfs:index_chars_missing_columns_type_annotation', 'foo', columns = {'columnA': 'INT', 'columnB': 'VARCHAR'})
+----
+0	f
+1	o
+2 	o
+
+
+# Error when type type annotations is missing column types
+statement error
+SELECT columnA, columnB FROM pytable('udfs:index_chars_missing_columns_type_annotation', 'foo')
+----
+Invalid Input Error: You did not specify a 'columns' argument, and your Python function does not have type annotations (or they are incompatible)
+
+# Error when type type annotations is missing a row type (which implicitly means it's missing column types too).
+statement error
+SELECT columnA, columnB FROM pytable('udfs:index_chars_missing_row_type_annotation', 'foo')
+----
+Invalid Input Error: You did not specify a 'columns' argument, and your Python function does not have type annotations (or they are incompatible)
+

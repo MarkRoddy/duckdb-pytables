@@ -40,7 +40,6 @@ void PythonFunction::init(const std::string &module_name, const std::string &fun
 		Py_DECREF(function_obj);
 		throw std::runtime_error("Function is not callable: " + function_name);
 	}
-
 	function = function_obj;
 }
 

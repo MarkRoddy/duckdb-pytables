@@ -59,6 +59,11 @@ extension-release:
 extension-debug:
 	cmake --build build/debug --config Debug
 
+python-tests:
+	. pythonpkgs/myenv/bin/activate && \
+	cd pythonpkgs/ducktables && \
+	python -m unittest discover -s tests/ducktables/
+
 python-ci: ./scripts/python-ci.sh
 	bash ./scripts/python-ci.sh
 
@@ -71,7 +76,7 @@ python-test-integration:
 
 # Tests a build of the extension against a download of DuckDB
 extension-integration-tests:
-	if [ -z "$(GITHUB_ACCESS_TOKEN)" ]; then echo "Missing GITHUB_ACCESS_TOKEN needed for testing"; exit 1; fi
+	@if [ -z "$(GITHUB_ACCESS_TOKEN)" ]; then echo "Missing GITHUB_ACCESS_TOKEN needed for testing"; exit 1; fi
 	cp pythonpkgs/ducktables/dist/ducktables-$(EXTENSION_VERSION)-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/pytables/pytables.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
@@ -151,11 +156,11 @@ test_legacy_debug:
 
 test_release:
 	python3 udfs.py
-	PYTHONPATH=. ./build/release/test/unittest --test-dir . "[sql]"
+	PYTHONPATH=pythonpkgs/ducktables/:. ./build/release/test/unittest --test-dir . "[sql]"
 
 test_debug:
 	python3 udfs.py
-	PYTHONPATH=. ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
+	PYTHONPATH=pythonpkgs/ducktables/:. ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
 
 check-format:
 	find src/ -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -Werror --sort-includes=0 -style=file --dry-run
