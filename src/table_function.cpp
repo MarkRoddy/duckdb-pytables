@@ -52,10 +52,6 @@ namespace pyudf {
 PyObject * TableFunction::wrap_function(PyObject *function) {
   std::cerr << "About to import the decorator" << std::endl;
   PyObject *decorator = import_decorator();
-  // if(!decorator) {
-  //   std::cerr << "Decorator not importable, using embedded version" << std::endl;
-  //   decorator = load_internal_decorator();
-  // }
   if(!decorator) {
     // todo: raise error?
     std::cerr << "Not able to find importable verison either, exitting" << std::endl;
@@ -136,69 +132,6 @@ PyObject * TableFunction::import_decorator() {
   std::cerr << "Got the function, now returning" << std::endl;
   return function_obj;
 
-}
-
-  std::string decoded_decorator_code() {
-    return getPythonSchemaDecorator();
-    // Decode Base64
-    // std::stringstream ss(getPythonSchemaDecorator());
-    // Poco::Base64Decoder b64dec(ss);
-    // std::string pyCode;
-    // b64dec >> pyCode;
-    // return pyCode;
-  }
-    
-PyObject * TableFunction::load_internal_decorator() {
-// #include <Python.h>
-
-//   PyObject* getPythonFunction(const std::string& code, const std::string& func_name) {
-//     Py_InitializeEx(0);
-
-  std::string code = decoded_decorator_code();
-    std::string func_name = "ducktable";
-    std::cerr << "Grabbing main so we can get some globals" << std::endl;
-    PyObject* main_module = PyImport_AddModule("__main__");  // borrowed reference
-    std::cerr << "Getting globals" << std::endl;
-    PyObject* global_dict = PyModule_GetDict(main_module);  // borrowed reference
-    std::cerr << "Got those globals" << std::endl;
-
-    std::cerr << "Compiling code" << std::endl;
-    PyObject* pCodeObj = Py_CompileString(code.c_str(), "", Py_file_input);
-    if (!pCodeObj) {
-      std::cerr << "Error compiling code" << std::endl;
-      PyErr_Print();
-      return nullptr;
-    }
-
-    std::cerr << "Evalutating Code" << std::endl;
-    PyObject* result = PyEval_EvalCode(pCodeObj, global_dict, global_dict);
-    std::cerr << "Decrefing code objects" << std::endl;
-    Py_DECREF(pCodeObj);
-    Py_XDECREF(result);  // no longer need the result, decrement its reference count
-
-    if (PyErr_Occurred()) {
-      std::cerr << "Error at some point after evaling code" << std::endl;
-      PyErr_Print();
-      return nullptr;
-    }
-
-    std::cerr << "Grabbing the function" << std::endl;
-    PyObject* func = PyDict_GetItemString(global_dict, func_name.c_str());  // borrowed reference
-    std::cerr << "Got the function" << std::endl;
-    
-    if (!func || !PyCallable_Check(func)) {
-      std::cerr << "Something was up wiht grabbing the function" << std::endl;
-      PyErr_Format(PyExc_RuntimeError, "%s is not a function", func_name.c_str());
-      PyErr_Print();
-      return nullptr;
-    }
-    std::cerr << "Increasing reference on hte function" << std::endl;
-    Py_INCREF(func);  // caller is responsible for decrementing
-    std::cerr << "Succeeded in increasing reference on hte function" << std::endl;
-    
-    // Py_FinalizeEx();
-    std::cerr << "Returning the function" << std::endl;
-    return func;
 }
 
 std::vector<PyObject*> TableFunction::pycolumn_types(PyObject* args, PyObject* kwargs) {

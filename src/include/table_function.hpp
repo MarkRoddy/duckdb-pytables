@@ -18,8 +18,6 @@ private:
   std::vector<PyObject*> pycolumn_types(PyObject* args, PyObject* kwargs);
   PyObject * wrap_function(PyObject *function);
   PyObject * import_decorator();
-  PyObject * load_internal_decorator();
-
 };
 
 } // namespace pyudf

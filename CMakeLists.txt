@@ -10,14 +10,6 @@ set(PYTHON_VERSION "3.8" CACHE STRING "Desired Python version")
 find_package(Python ${PYTHON_VERSION} EXACT COMPONENTS Development Interpreter)
 get_filename_component(PYTHON_LIB_NAME ${Python_LIBRARIES} NAME)
 
-# Pull in the Python source for our decorator that does schema inference,
-# this gets built by the Makefile cause I couldn't figure out how to do it here.
-# set(PYTHON_SCRIPT_ENCODED_PATH "build/ducktables.py.b64")
-set(PYTHON_SCRIPT_ENCODED_PATH "pythonpkgs/ducktables/ducktables/__init__.py")
-file(READ ${PYTHON_SCRIPT_ENCODED_PATH} PYTHON_SCRIPT_CONTENT)
-
-# Writes out compile time inform to a header file. Current values include
-# the libpython version + the schema decorator python source.
 configure_file(src/include/config.h.in config.h @ONLY)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
