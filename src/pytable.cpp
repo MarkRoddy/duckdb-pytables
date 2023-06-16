@@ -9,6 +9,7 @@
 #include "python_function.hpp"
 #include "table_function.hpp"
 #include <pyconvert.hpp>
+#include <log.hpp>
 
 #include <typeinfo>
 
@@ -184,14 +185,14 @@ void PyBindColumnsAndTypes(ClientContext &context, TableFunctionBindInput &input
 		}
 		if (return_types.size() != names.size()) {
 			// Show the names:
-			std::cerr << "Column Names:" << std::endl;
+			debug("Column Names:");
 			for (auto n : names) {
-				std::cerr << n << std::endl;
+				debug(n);
 			}
 			// Show the types:
-			std::cerr << "Column Types:" << std::endl;
+			debug("Column Types:");
 			for (auto t : types) {
-				std::cerr << t.ToString() << std::endl;
+				debug(t.ToString());
 			}
 			throw InvalidInputException("Python function reported a mismatched number of column names and types");
 		} else if (0 == names.size()) {
@@ -225,8 +226,8 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	auto result = make_uniq<PyScanBindData>();
 	PyBindFunctionAndArgs(context, input, result);
 	PyBindColumnsAndTypes(context, input, result, return_types, names);
-	std::cerr << "PyBindColumnsAndTypes: Num Column Names:" << names.size() << std::endl;
-	std::cerr << "PyBindColumnsAndTypes: Num Column types:" << return_types.size() << std::endl;
+	debug("PyBindColumnsAndTypes: Num Column Names:" + to_string(names.size()));
+	debug("PyBindColumnsAndTypes: Num Column types:" + to_string(return_types.size()));
 
 	// Invoke the function and grab a copy of the iterable it returns.
 	PyObject *iter;

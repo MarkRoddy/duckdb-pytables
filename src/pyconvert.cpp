@@ -4,6 +4,7 @@
 #include <Python.h>
 #include <iostream>
 #include <unordered_map>
+#include <log.hpp>
 
 namespace pyudf {
 
@@ -39,7 +40,7 @@ PyObject *duckdb_to_py(duckdb::Value &value) {
 		py_value = StructToDict(value);
 		break;
 	default:
-		std::cerr << "Unhandled Logical Type: " + value.type().ToString() << std::endl;
+		debug("Unhandled Logical Type: " + value.type().ToString());
 		Py_INCREF(Py_None);
 		py_value = Py_None;
 	}

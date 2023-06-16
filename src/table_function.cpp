@@ -3,16 +3,18 @@
 #include <table_function.hpp>
 #include <config.h>
 #include <pyconvert.hpp>
+#include <string>
+#include <log.hpp>
 
 namespace pyudf {
 
 TableFunction::TableFunction(const std::string &function_specifier) : PythonFunction(function_specifier) {
 	auto wrapped = wrap_function(function);
 	if (wrapped) {
-		std::cerr << "Successfully wrapped the function" << std::endl;
+		debug("Successfully wrapped the function");
 		function = wrapped;
 	} else {
-		std::cerr << "Failed to find function wrapper, this may be ok?" << std::endl;
+		debug("Failed to find function wrapper, this may be ok?");
 	}
 }
 
@@ -20,27 +22,27 @@ TableFunction::TableFunction(const std::string &module_name, const std::string &
     : PythonFunction(module_name, function_name) {
 	auto wrapped = wrap_function(function);
 	if (wrapped) {
-		std::cerr << "Successfully wrapped the function" << std::endl;
+		debug("Successfully wrapped the function");
 		function = wrapped;
 	} else {
-		std::cerr << "Failed to find function wrapper, this may be ok?" << std::endl;
+		debug("Failed to find function wrapper, this may be ok?");
 	}
 }
 
 PyObject *TableFunction::wrap_function(PyObject *function) {
-	std::cerr << "About to import the decorator" << std::endl;
+	debug("About to import the decorator");
 	PyObject *decorator = import_decorator();
 	if (!decorator) {
 		// todo: raise error?
-		std::cerr << "Not able to find importable verison either, exitting" << std::endl;
+		debug("Not able to find importable verison either, exitting");
 		return nullptr;
 	}
 	if (!decorator) {
-		std::cerr << "Our decorator is null?!?!" << std::endl;
+		debug("Our decorator is null?!?!");
 		return nullptr;
 	}
 	if (!PyCallable_Check(decorator)) {
-		std::cerr << "Our decorator isn't callable?!?!" << std::endl;
+		debug("Our decorator isn't callable?!?!");
 		return nullptr;
 	}
 
@@ -49,64 +51,70 @@ PyObject *TableFunction::wrap_function(PyObject *function) {
 	// TODO TODO TODO
 
 	// Otherwise, go ahead and wrappe it
-	std::cerr << "Creating a tuple for arguments" << std::endl;
+	debug("Creating a tuple for arguments");
 	PyObject *args = PyTuple_New(1);
-	std::cerr << "Setting our function as hte only argument" << std::endl;
+	debug("Setting our function as hte only argument");
 	PyTuple_SetItem(args, 0, function);
 
 	if (!function) {
-		printf("function is nullptr\n");
+		debug("function is nullptr");
+		return nullptr;
 	} else if (function == Py_None) {
-		printf("function is None\n");
+		debug("function is None");
+		return nullptr;
 	} else if (!PyCallable_Check(function)) {
-		printf("function is not callable\n");
+		debug("function is not callable");
+		return nullptr;
 	}
 
 	if (!args) {
-		printf("args is nullptr\n");
+		debug("args is nullptr\n");
+		return nullptr;
 	} else if (args == Py_None) {
-		printf("args is None\n");
+		debug("args is None\n");
+		return nullptr;
 	} else if (!PyTuple_Check(args)) {
-		printf("args is not a tuple\n");
+		debug("args is not a tuple\n");
+		return nullptr;
 	}
 
 	if (PyErr_Occurred()) {
 		PyErr_Print();
+		return nullptr;
 	}
 
-	std::cerr << "Calling the function to wrap our function" << std::endl;
+	debug("Calling the function to wrap our function");
 	PyObject *wrapped_function = PyObject_CallObject(decorator, args);
-	std::cerr << "Completed calling the function to wrapp" << std::endl;
+	debug("Completed calling the function to wrapp");
 	if (!wrapped_function) {
-		std::cerr << "Error wrapping the function" << std::endl;
+		debug("Error wrapping the function");
 		PyErr_Print();
 		return nullptr;
 	}
-	std::cerr << "Succeeded in wrapping the function?" << std::endl;
-	// todo: handle exception from wrapping
+	debug("Succeeded in wrapping the function?");
+	// todo: handle exception from wrapping?
 	return wrapped_function;
 }
 
 PyObject *TableFunction::import_decorator() {
-	std::cerr << "Calling import module" << std::endl;
-	std::cerr << "Calling import module2" << std::endl;
+	debug("Calling import module");
 	PyObject *module_obj = PyImport_ImportModule("ducktables");
-	std::cerr << "Completed calling import module" << std::endl;
+	debug("Completed calling import module");
 	if (!module_obj) {
-		std::cerr << "Module not found returning null" << std::endl;
+		debug("Module not found returning null");
 		// todo: Maybe we want to report this error if it isn't just import error?
 		PyErr_Print();
 		return nullptr;
 	}
-	std::cerr << "Getting the attribute..." << std::endl;
+	debug("Getting the attribute...");
 	PyObject *function_obj = PyObject_GetAttrString(module_obj, "ducktable");
 	if (!function_obj) {
 		// todo: Maybe we want to report this error if it isn't just import error?
-		std::cerr << "Attribute not found returning null" << std::endl;
+		debug("Attribute not found returning null");
 		PyErr_Print();
 		return nullptr;
 	}
-	std::cerr << "Got the function, now returning" << std::endl;
+	debug("Got the function, now returning");
 	return function_obj;
 }
 
@@ -166,7 +174,7 @@ std::vector<std::string> TableFunction::column_names(PyObject *args, PyObject *k
 		// Check if the return value is a list
 		if (result && PyList_Check(result)) {
 			Py_ssize_t listSize = PyList_Size(result);
-			std::cerr << "Number of column names returned by Python:  " << listSize << std::endl;
+			debug("Number of column names returned by Python:  " + std::to_string(listSize));
 			// Iterate over the list elements
 			for (Py_ssize_t i = 0; i < listSize; ++i) {
 				PyObject *listItem = PyList_GetItem(result, i);
@@ -188,7 +196,7 @@ std::vector<std::string> TableFunction::column_names(PyObject *args, PyObject *k
 
 	// Release the reference to the 'column_names' method
 	Py_XDECREF(columnNamesMethod);
-	std::cerr << "Number of column names in our C++ vector:  " << columnNames.size() << std::endl;
+	debug("Number of column names in our C++ vector:  " + std::to_string(columnNames.size()));
 	return columnNames;
 }
 
