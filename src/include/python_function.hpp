@@ -5,7 +5,6 @@
 #include <string>
 #include <utility>
 #include <python_exception.hpp>
-#include <map>
 
 namespace pyudf {
 
@@ -29,11 +28,11 @@ public:
 
 protected:
 	void init(const std::string &module_name, const std::string &function_name);
+	PyObject *function;
+private:
 	std::string module_name_;
 	std::string function_name_;
 	PyObject *module;
-	PyObject *function;
-        // PyObject *wrapped_function;
 };
 
 } // namespace pyudf
