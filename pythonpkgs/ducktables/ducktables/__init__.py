@@ -11,7 +11,7 @@ class DuckTableSchemaWrapper:
         col_types = self.column_types(*args, **kwargs)
         if not col_types:
             return None
-        return [f'column{i + 1}' for i, _ in enumerate(col_types)]
+        return [f'column{i + 1}' for i in range(len(col_types))]
 
     def column_types(self, *args, **kwargs):
         sig = inspect.signature(self.func)

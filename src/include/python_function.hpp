@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <python_exception.hpp>
+#include <map>
 
 namespace pyudf {
 
@@ -19,7 +20,6 @@ public:
 
 	std::pair<PyObject *, PythonException *> call(PyObject *args) const;
 	std::pair<PyObject *, PythonException *> call(PyObject *args, PyObject *kwargs) const;
-
 	std::string function_name() {
 		return function_name_;
 	}
@@ -27,16 +27,13 @@ public:
 		return module_name_;
 	}
 
-private:
+protected:
 	void init(const std::string &module_name, const std::string &function_name);
-  PyObject * wrap_function(PyObject *function);
-  PyObject * import_decorator();
-  PyObject * load_internal_decorator();
 	std::string module_name_;
 	std::string function_name_;
 	PyObject *module;
 	PyObject *function;
-        PyObject *wrapped_function;
+        // PyObject *wrapped_function;
 };
 
 } // namespace pyudf

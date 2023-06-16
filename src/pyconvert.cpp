@@ -3,6 +3,7 @@
 #include <duckdb.hpp>
 #include <Python.h>
 #include <iostream>
+#include <unordered_map>
 
 namespace pyudf {
 
@@ -203,4 +204,47 @@ PyObject *StructToDict(duckdb::Value value) {
 	return py_value;
 }
 
+
+
+  // Assuming the DuckDB::LogicalType is defined in DuckDB namespace
+
+  // Assuming the duckdb::LogicalType is defined in duckdb namespace
+
+std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObject*>& pyTypes) {
+    std::vector<duckdb::LogicalType> logicalTypes;
+
+    // Map Python type names to DuckDB logical types
+    std::unordered_map<std::string, duckdb::LogicalType> typeMap = {
+                                                                    {"int", duckdb::LogicalType::INTEGER},
+                                                                    {"str", duckdb::LogicalType::VARCHAR},
+                                                                    {"float", duckdb::LogicalType::DOUBLE},
+                                                                    // TODO: Add more mappings for other supported Python types
+    };
+
+    // Iterate over the Python type objects
+    for (PyObject* pyType : pyTypes) {
+      if (PyType_Check(pyType)) {
+        // Get the type name as a C++ string
+        PyObject* typeNameObj = PyObject_GetAttrString(pyType, "__name__");
+        if (typeNameObj && PyUnicode_Check(typeNameObj)) {
+          const char* typeName = PyUnicode_AsUTF8(typeNameObj);
+
+          // Find the corresponding DuckDB logical type
+          auto it = typeMap.find(typeName);
+          if (it != typeMap.end()) {
+            logicalTypes.push_back(it->second);
+          } else {
+            // Unknown type, add an invalid logical type
+            logicalTypes.push_back(duckdb::LogicalType::INVALID);
+          }
+        }
+
+        // Release the reference to the type name object
+        Py_XDECREF(typeNameObj);
+      }
+    }
+
+    return logicalTypes;
+  }
+  
 } // namespace pyudf

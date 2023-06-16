@@ -11,5 +11,5 @@ duckdb::Value ConvertPyObjectToDuckDBValue(PyObject *py_item, duckdb::LogicalTyp
 void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::LogicalType> logical_types,
                                     std::vector<duckdb::Value> &result);
 PyObject *pyObjectToIterable(PyObject *py_object);
-
+std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObject*>& pyTypes);
 } // namespace pyudf

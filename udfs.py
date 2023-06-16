@@ -1,4 +1,6 @@
 
+from typing import Iterable, Tuple
+
 # Scalar Functions
 def reverse(input):
     return input[::-1]
@@ -25,6 +27,9 @@ def index_chars(input):
     for i, val in enumerate(input):
         yield [i, val]
 
+def index_chars_types_annotated(input) -> Iterable[Tuple[int, str]]:
+    for i, val in enumerate(input):
+        yield (i, val)
 
 def table2(one_str_input, two_str_input, three_int_input):
     for c in one_str_input:

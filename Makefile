@@ -159,11 +159,11 @@ test_legacy_debug:
 
 test_release:
 	python3 udfs.py
-	PYTHONPATH=. ./build/release/test/unittest --test-dir . "[sql]"
+	PYTHONPATH=pythonpkgs/ducktables/:. ./build/release/test/unittest --test-dir . "[sql]"
 
 test_debug:
 	python3 udfs.py
-	PYTHONPATH=. ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
+	PYTHONPATH=pythonpkgs/ducktables/:. ASAN_OPTIONS=detect_leaks=1 ./build/debug/test/unittest --test-dir . "[sql]"
 
 check-format:
 	find src/ -iname '*.hpp' -o -iname '*.cpp' | xargs clang-format -Werror --sort-includes=0 -style=file --dry-run

@@ -1,4 +1,6 @@
 
 #define PYTHON_LIB_NAME "@PYTHON_LIB_NAME@.1.0"
 
-#define PYTHON_SCHEMA_DECORATOR "@PYTHON_SCRIPT_CONTENT@"
+inline const char* getPythonSchemaDecorator() {
+  return R"delimiter(@PYTHON_SCRIPT_CONTENT@)delimiter";
+}
