@@ -6,11 +6,13 @@ RUN apt-get update -y && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update -y
 
+
 ARG PYTHON_VERSION
 RUN test -n "$PYTHON_VERSION"
 RUN apt-get install -y -qq python${PYTHON_VERSION} libpython${PYTHON_VERSION} python${PYTHON_VERSION}-distutils && \
     curl https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION} && \
     python$PYTHON_VERSION -m pip install --upgrade pip
+
 
 # Confirm we have our expected version of python installed
 RUN python$PYTHON_VERSION --version
@@ -34,7 +36,7 @@ RUN curl -Lo /tmp/duckdb_cli.zip "https://github.com/duckdb/duckdb/releases/down
     duckdb --version
 
 # Install the Python Helper Library, assumes the wheel has been copied to our cwd
-COPY ducktables-${EXTENSION_VERSION}-py3-none-any.whl /tmp    
+COPY ducktables-${EXTENSION_VERSION}-py3-none-any.whl /tmp
 RUN python$PYTHON_VERSION -m pip install  /tmp/ducktables-${EXTENSION_VERSION}-py3-none-any.whl && \
     rm /tmp/ducktables-${EXTENSION_VERSION}-py3-none-any.whl
 
