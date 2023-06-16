@@ -204,12 +204,6 @@ PyObject *StructToDict(duckdb::Value value) {
 	return py_value;
 }
 
-
-
-  // Assuming the DuckDB::LogicalType is defined in DuckDB namespace
-
-  // Assuming the duckdb::LogicalType is defined in duckdb namespace
-
 std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObject*>& pyTypes) {
     std::vector<duckdb::LogicalType> logicalTypes;
 
@@ -227,7 +221,7 @@ std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObjec
         // Get the type name as a C++ string
         PyObject* typeNameObj = PyObject_GetAttrString(pyType, "__name__");
         if (typeNameObj && PyUnicode_Check(typeNameObj)) {
-          const char* typeName = PyUnicode_AsUTF8(typeNameObj);
+          const char* typeName = Unicode_AsUTF8(typeNameObj);
 
           // Find the corresponding DuckDB logical type
           auto it = typeMap.find(typeName);
@@ -237,6 +231,8 @@ std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObjec
             // Unknown type, add an invalid logical type
             logicalTypes.push_back(duckdb::LogicalType::INVALID);
           }
+
+          // todo: free typeName?
         }
 
         // Release the reference to the type name object
@@ -245,6 +241,33 @@ std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObjec
     }
 
     return logicalTypes;
+  }
+
+// Duplicates functionality of PyUnicode_AsUTF8() which is not part of the limited ABI
+char* Unicode_AsUTF8(PyObject* unicodeObject) {
+    PyObject* utf8 = PyUnicode_AsUTF8String(unicodeObject);
+    if (utf8 == nullptr) {
+      PyErr_Print();
+      return nullptr;
+    }
+
+    char* bytes = PyBytes_AsString(utf8);
+    if (bytes == nullptr) {
+      Py_DECREF(utf8);
+      PyErr_Print();
+      return nullptr;
+    }
+
+    char* result = strdup(bytes);
+    Py_DECREF(utf8);
+
+    if (result == nullptr) {
+      PyErr_SetString(PyExc_MemoryError, "Out of memory");
+      PyErr_Print();
+      return nullptr;
+    }
+
+    return result;
   }
   
 } // namespace pyudf

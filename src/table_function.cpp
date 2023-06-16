@@ -198,8 +198,9 @@ std::vector<std::string> TableFunction::column_names(PyObject* args, PyObject* k
 
           // Convert the list item to a C++ string
           if (PyUnicode_Check(listItem)) {
-            const char* columnName = PyUnicode_AsUTF8(listItem);
+            const char* columnName = Unicode_AsUTF8(listItem);
             columnNames.emplace_back(columnName);
+            // todo: free columnName?????
           } else {
             // todo: this will break something by leaving out a column name
           }

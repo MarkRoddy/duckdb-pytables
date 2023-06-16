@@ -55,8 +55,7 @@ Invalid Input Error: First argument must be string specifying 'module:func' if n
 statement error
 SELECT columnA, columnB FROM pytable('udfs:index_chars', 'foo')
 ----
-Invalid Input Error: Must specify a 'columns' arugment if your function does not declare its types
-
+Invalid Input Error: You did not specify a 'columns' argument, and your Python function does not have type annotations (or they are incompatible)
 
 # Using func w/o module
 statement error

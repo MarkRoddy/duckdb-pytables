@@ -7,7 +7,7 @@ set(EXTENSION_NAME ${TARGET_NAME}_extension)
 project(${TARGET_NAME})
 
 set(PYTHON_VERSION "3.8" CACHE STRING "Desired Python version")
-find_package(Python ${PYTHON_VERSION} EXACT COMPONENTS Development Interpreter)
+find_package(Python ${PYTHON_VERSION} EXACT COMPONENTS Development)
 get_filename_component(PYTHON_LIB_NAME ${Python_LIBRARIES} NAME)
 
 configure_file(src/include/config.h.in config.h @ONLY)
@@ -17,18 +17,16 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(src/include ${Python_INCLUDE_DIRS})
 
 FILE(GLOB EXTENSION_SOURCES src/*.cpp)
-add_subdirectory(pybind11)
 
 # Define Py_LIMITED_API for all source files, pins us to Python 3.4.
-# Removed this as it's not compatible with PyBind11.
-# add_definitions(-DPy_LIMITED_API=0x03040000)
+add_definitions(-DPy_LIMITED_API=0x03080000)
 
 add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
 
 set(PARAMETERS "-warnings")
 build_loadable_extension(${TARGET_NAME} ${PARAMETERS} ${EXTENSION_SOURCES})
 
-target_link_libraries(${EXTENSION_NAME} ${Python_LIBRARIES} pybind11::module)
+target_link_libraries(${EXTENSION_NAME} ${Python_LIBRARIES})
 
 install(
   TARGETS ${EXTENSION_NAME}
