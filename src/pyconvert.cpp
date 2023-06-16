@@ -204,70 +204,70 @@ PyObject *StructToDict(duckdb::Value value) {
 	return py_value;
 }
 
-std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObject*>& pyTypes) {
-    std::vector<duckdb::LogicalType> logicalTypes;
+std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObject *> &pyTypes) {
+	std::vector<duckdb::LogicalType> logicalTypes;
 
-    // Map Python type names to DuckDB logical types
-    std::unordered_map<std::string, duckdb::LogicalType> typeMap = {
-                                                                    {"int", duckdb::LogicalType::INTEGER},
-                                                                    {"str", duckdb::LogicalType::VARCHAR},
-                                                                    {"float", duckdb::LogicalType::DOUBLE},
-                                                                    // TODO: Add more mappings for other supported Python types
-    };
+	// Map Python type names to DuckDB logical types
+	std::unordered_map<std::string, duckdb::LogicalType> typeMap = {
+	    {"int", duckdb::LogicalType::INTEGER},
+	    {"str", duckdb::LogicalType::VARCHAR},
+	    {"float", duckdb::LogicalType::DOUBLE},
+	    // TODO: Add more mappings for other supported Python types
+	};
 
-    // Iterate over the Python type objects
-    for (PyObject* pyType : pyTypes) {
-      if (PyType_Check(pyType)) {
-        // Get the type name as a C++ string
-        PyObject* typeNameObj = PyObject_GetAttrString(pyType, "__name__");
-        if (typeNameObj && PyUnicode_Check(typeNameObj)) {
-          const char* typeName = Unicode_AsUTF8(typeNameObj);
+	// Iterate over the Python type objects
+	for (PyObject *pyType : pyTypes) {
+		if (PyType_Check(pyType)) {
+			// Get the type name as a C++ string
+			PyObject *typeNameObj = PyObject_GetAttrString(pyType, "__name__");
+			if (typeNameObj && PyUnicode_Check(typeNameObj)) {
+				const char *typeName = Unicode_AsUTF8(typeNameObj);
 
-          // Find the corresponding DuckDB logical type
-          auto it = typeMap.find(typeName);
-          if (it != typeMap.end()) {
-            logicalTypes.push_back(it->second);
-          } else {
-            // Unknown type, add an invalid logical type
-            logicalTypes.push_back(duckdb::LogicalType::INVALID);
-          }
+				// Find the corresponding DuckDB logical type
+				auto it = typeMap.find(typeName);
+				if (it != typeMap.end()) {
+					logicalTypes.push_back(it->second);
+				} else {
+					// Unknown type, add an invalid logical type
+					logicalTypes.push_back(duckdb::LogicalType::INVALID);
+				}
 
-          // todo: free typeName?
-        }
+				// todo: free typeName?
+			}
 
-        // Release the reference to the type name object
-        Py_XDECREF(typeNameObj);
-      }
-    }
+			// Release the reference to the type name object
+			Py_XDECREF(typeNameObj);
+		}
+	}
 
-    return logicalTypes;
-  }
+	return logicalTypes;
+}
 
 // Duplicates functionality of PyUnicode_AsUTF8() which is not part of the limited ABI
-char* Unicode_AsUTF8(PyObject* unicodeObject) {
-    PyObject* utf8 = PyUnicode_AsUTF8String(unicodeObject);
-    if (utf8 == nullptr) {
-      PyErr_Print();
-      return nullptr;
-    }
+char *Unicode_AsUTF8(PyObject *unicodeObject) {
+	PyObject *utf8 = PyUnicode_AsUTF8String(unicodeObject);
+	if (utf8 == nullptr) {
+		PyErr_Print();
+		return nullptr;
+	}
 
-    char* bytes = PyBytes_AsString(utf8);
-    if (bytes == nullptr) {
-      Py_DECREF(utf8);
-      PyErr_Print();
-      return nullptr;
-    }
+	char *bytes = PyBytes_AsString(utf8);
+	if (bytes == nullptr) {
+		Py_DECREF(utf8);
+		PyErr_Print();
+		return nullptr;
+	}
 
-    char* result = strdup(bytes);
-    Py_DECREF(utf8);
+	char *result = strdup(bytes);
+	Py_DECREF(utf8);
 
-    if (result == nullptr) {
-      PyErr_SetString(PyExc_MemoryError, "Out of memory");
-      PyErr_Print();
-      return nullptr;
-    }
+	if (result == nullptr) {
+		PyErr_SetString(PyExc_MemoryError, "Out of memory");
+		PyErr_Print();
+		return nullptr;
+	}
 
-    return result;
-  }
-  
+	return result;
+}
+
 } // namespace pyudf

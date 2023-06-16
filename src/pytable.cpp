@@ -10,7 +10,6 @@
 #include "table_function.hpp"
 #include <pyconvert.hpp>
 
-
 #include <typeinfo>
 
 using namespace duckdb;
@@ -28,7 +27,7 @@ struct PyScanBindData : public TableFunctionData {
 	// Return value of the function specified
 	PyObject *function_result_iterable;
 
-        pyudf::TableFunction* pyfunc;
+	pyudf::TableFunction *pyfunc;
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -116,7 +115,8 @@ void PyScan(ClientContext &context, TableFunctionInput &data, DataChunk &output)
 	}
 }
 
-void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input, unique_ptr<PyScanBindData> &bind_data) {
+void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input,
+                           unique_ptr<PyScanBindData> &bind_data) {
 	auto params = input.named_parameters;
 	std::string module_name;
 	std::string function_name;
@@ -146,7 +146,7 @@ void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input
 		throw InvalidInputException("I don't know how logic works");
 	}
 
-        bind_data->pyfunc = new pyudf::TableFunction(module_name, function_name);
+	bind_data->pyfunc = new pyudf::TableFunction(module_name, function_name);
 	// PythonFunction func = PythonFunction(module_name, function_name);
 	bind_data->arguments = duckdbs_to_pys(arguments);
 	if (NULL == bind_data->arguments) {
@@ -163,43 +163,44 @@ void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input
 	}
 }
 
-
-  void PyBindColumnsAndTypes(ClientContext &context, TableFunctionBindInput &input, unique_ptr<PyScanBindData> &bind_data, std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
-        auto names_and_types = input.named_parameters["columns"];
+void PyBindColumnsAndTypes(ClientContext &context, TableFunctionBindInput &input, unique_ptr<PyScanBindData> &bind_data,
+                           std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
+	auto names_and_types = input.named_parameters["columns"];
 	auto &child_type = names_and_types.type();
-        if (names_and_types.IsNull()) {
-          // Check if we can grab from the function
-          auto types = bind_data->pyfunc->column_types(bind_data->arguments, bind_data->kwargs);
-          if (types.empty()) {
-            // todo: Add a URL to an article on writing Python functions once said article exists
-            auto errMsg = "You did not specify a 'columns' argument, and your Python function does not have type annotations (or they are incompatible)";
-            throw InvalidInputException(errMsg);
-          }
-          for( auto t: types) {
-            return_types.emplace_back(t);
-          }
-          auto colnames = bind_data->pyfunc->column_names(bind_data->arguments, bind_data->kwargs);
-          for(auto n: colnames) {
-            names.push_back(n);
-          }
-          if (return_types.size() != names.size()) {
-            // Show the names:
-            std::cerr << "Column Names:" << std::endl;
-            for(auto n: names) {
-              std::cerr << n << std::endl;
-            }
-            // Show the types:
-            std::cerr << "Column Types:" << std::endl;
-            for(auto t: types) {
-              std::cerr << t.ToString() << std::endl;
-            }
-            throw InvalidInputException("Python function reported a mismatched number of column names and types");
-          } else if (0 == names.size()) {
-            throw InvalidInputException("Python function reported it contains zero columns");
-          }
-          bind_data->return_types = types;
-          return;
-        }
+	if (names_and_types.IsNull()) {
+		// Check if we can grab from the function
+		auto types = bind_data->pyfunc->column_types(bind_data->arguments, bind_data->kwargs);
+		if (types.empty()) {
+			// todo: Add a URL to an article on writing Python functions once said article exists
+			auto errMsg = "You did not specify a 'columns' argument, and your Python function does not have type "
+			              "annotations (or they are incompatible)";
+			throw InvalidInputException(errMsg);
+		}
+		for (auto t : types) {
+			return_types.emplace_back(t);
+		}
+		auto colnames = bind_data->pyfunc->column_names(bind_data->arguments, bind_data->kwargs);
+		for (auto n : colnames) {
+			names.push_back(n);
+		}
+		if (return_types.size() != names.size()) {
+			// Show the names:
+			std::cerr << "Column Names:" << std::endl;
+			for (auto n : names) {
+				std::cerr << n << std::endl;
+			}
+			// Show the types:
+			std::cerr << "Column Types:" << std::endl;
+			for (auto t : types) {
+				std::cerr << t.ToString() << std::endl;
+			}
+			throw InvalidInputException("Python function reported a mismatched number of column names and types");
+		} else if (0 == names.size()) {
+			throw InvalidInputException("Python function reported it contains zero columns");
+		}
+		bind_data->return_types = types;
+		return;
+	}
 	if (child_type.id() != LogicalTypeId::STRUCT) {
 		throw InvalidInputException("columns requires a struct mapping column names to data types");
 	}
@@ -217,18 +218,17 @@ void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input
 	if (names.empty()) {
 		throw BinderException("require at least a single column as input!");
 	}
-        bind_data->return_types = std::vector<LogicalType>(return_types);
-
+	bind_data->return_types = std::vector<LogicalType>(return_types);
 }
-  
+
 unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &input,
                                 std::vector<LogicalType> &return_types, std::vector<std::string> &names) {
 	auto result = make_uniq<PyScanBindData>();
-        PyBindFunctionAndArgs(context, input, result);
-        PyBindColumnsAndTypes(context, input, result, return_types, names);
-        std::cerr << "PyBindColumnsAndTypes: Num Column Names:" << names.size() << std::endl;
-        std::cerr << "PyBindColumnsAndTypes: Num Column types:" << return_types.size() << std::endl;
-        
+	PyBindFunctionAndArgs(context, input, result);
+	PyBindColumnsAndTypes(context, input, result, return_types, names);
+	std::cerr << "PyBindColumnsAndTypes: Num Column Names:" << names.size() << std::endl;
+	std::cerr << "PyBindColumnsAndTypes: Num Column types:" << return_types.size() << std::endl;
+
 	// Invoke the function and grab a copy of the iterable it returns.
 	PyObject *iter;
 	PythonException *error;
@@ -240,7 +240,8 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 		throw std::runtime_error(err);
 	} else if (!PyIter_Check(iter)) {
 		Py_XDECREF(iter);
-		throw std::runtime_error("Error: function '" + result->pyfunc->function_name() + "' did not return an iterator\n");
+		throw std::runtime_error("Error: function '" + result->pyfunc->function_name() +
+		                         "' did not return an iterator\n");
 	}
 	result->function_result_iterable = iter;
 	return std::move(result);
@@ -263,8 +264,8 @@ unique_ptr<LocalTableFunctionState> PyInitLocalState(ExecutionContext &context, 
 }
 
 unique_ptr<CreateTableFunctionInfo> GetPythonTableFunction() {
-	auto py_table_function =
-          duckdb::TableFunction("pytable", {}, PyScan, (table_function_bind_t)PyBind, PyInitGlobalState, PyInitLocalState);
+	auto py_table_function = duckdb::TableFunction("pytable", {}, PyScan, (table_function_bind_t)PyBind,
+	                                               PyInitGlobalState, PyInitLocalState);
 
 	// todo: don't configure this for older versions of duckdb
 	py_table_function.varargs = LogicalType::ANY;

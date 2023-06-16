@@ -29,6 +29,7 @@ public:
 protected:
 	void init(const std::string &module_name, const std::string &function_name);
 	PyObject *function;
+
 private:
 	std::string module_name_;
 	std::string function_name_;

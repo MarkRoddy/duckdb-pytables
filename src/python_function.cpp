@@ -48,7 +48,6 @@ PythonFunction::~PythonFunction() {
 	Py_DECREF(module);
 }
 
-    
 std::pair<PyObject *, PythonException *> PythonFunction::call(PyObject *args, PyObject *kwargs) const {
 	PyObject *result = PyObject_Call(function, args, kwargs);
 
