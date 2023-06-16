@@ -42,24 +42,21 @@ clean:
 	rm -rf testext
 	cd duckdb && make clean
 
-build/ducktables.py.b64: pythonpkgs/ducktables/ducktables/__init__.py
-	base64 --wrap=0 < pythonpkgs/ducktables/ducktables/__init__.py > build/ducktables.py.b64
-
 # Main build
-debug: build/ducktables.py.b64
+debug:
 	mkdir -p  build/debug && \
 	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DENABLE_SANITIZER=TRUE -DFORCE_ASSERT=TRUE -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Debug ${BUILD_FLAGS} -S ./duckdb/ -B build/debug && \
 	cmake --build build/debug --config Debug
 
-release: build/ducktables.py.b64
+release:
 	mkdir -p build/release && \
 	cmake $(GENERATOR) $(FORCE_COLOR) $(EXTENSION_FLAGS) ${CLIENT_FLAGS} -DPYTHON_VERSION=$(PYTHON_VERSION) -DEXTENSION_STATIC_BUILD=1 -DCMAKE_BUILD_TYPE=Release ${BUILD_FLAGS} -S ./duckdb/ -B build/release && \
 	cmake --build build/release --config Release
 
-extension-release: build/ducktables.py.b64
+extension-release:
 	cmake --build build/release --config Release
 
-extension-debug: build/ducktables.py.b64
+extension-debug:
 	cmake --build build/debug --config Debug
 
 python-tests:
