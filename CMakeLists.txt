@@ -19,7 +19,7 @@ include_directories(src/include ${Python_INCLUDE_DIRS})
 FILE(GLOB EXTENSION_SOURCES src/*.cpp)
 
 # Define Py_LIMITED_API for all source files, pins us to Python 3.4.
-add_definitions(-DPy_LIMITED_API=0x03080000)
+add_definitions(-DPy_LIMITED_API=0x03040000)
 
 add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
 
