@@ -6,29 +6,7 @@
 
 namespace pyudf {
 
-// class A
-// {
-// public:
-//   A(bool construct = true) {
-//     if (!construct) return;
-//     bar();
-//   }
-//   virtual void bar() { cout << "A::bar" << endl; }
-// };
-
-// class B : public A
-// {
-// public:
-//   B() : A(false) { bar(); }
-//   void bar() override { cout << "B::bar" << endl; }
-// };
 TableFunction::TableFunction(const std::string &function_specifier) : PythonFunction(function_specifier) {
-	// std::string module_name;
-	// std::string function_name;
-	// std::tie(module_name, function_name) = parse_func_specifier(function_specifier);
-	// init(module_name, function_name);
-	// std::cerr << "Got the function, now going to wrap it..." << std::endl;
-
 	auto wrapped = wrap_function(function);
 	if (wrapped) {
 		std::cerr << "Successfully wrapped the function" << std::endl;
