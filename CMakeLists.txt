@@ -11,7 +11,6 @@ find_package(Python ${PYTHON_VERSION} EXACT COMPONENTS Development)
 get_filename_component(PYTHON_LIB_NAME ${Python_LIBRARIES} NAME)
 
 configure_file(src/include/config.h.in config.h @ONLY)
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(src/include ${Python_INCLUDE_DIRS})
