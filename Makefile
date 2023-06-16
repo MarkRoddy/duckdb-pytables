@@ -76,7 +76,7 @@ python-test-integration:
 
 # Tests a build of the extension against a download of DuckDB
 extension-integration-tests:
-	if [ -z "$(GITHUB_ACCESS_TOKEN)" ]; then echo "Missing GITHUB_ACCESS_TOKEN needed for testing"; exit 1; fi
+	@if [ -z "$(GITHUB_ACCESS_TOKEN)" ]; then echo "Missing GITHUB_ACCESS_TOKEN needed for testing"; exit 1; fi
 	cp pythonpkgs/ducktables/dist/ducktables-$(EXTENSION_VERSION)-py3-none-any.whl test/extension-integration/
 	cp build/release/extension/pytables/pytables.duckdb_extension test/extension-integration/
 	cd test/extension-integration/ && \
