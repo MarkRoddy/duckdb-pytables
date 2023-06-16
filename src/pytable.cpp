@@ -171,7 +171,9 @@ void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input
           // Check if we can grab from the function
           auto types = bind_data->pyfunc->column_types(bind_data->arguments, bind_data->kwargs);
           if (types.empty()) {
-            throw InvalidInputException("Must specify a 'columns' arugment if your function does not declare its types");
+            // todo: Add a URL to an article on writing Python functions once said article exists
+            auto errMsg = "You did not specify a 'columns' argument, and your Python function does not have type annotations (or they are incompatible)";
+            throw InvalidInputException(errMsg);
           }
           for( auto t: types) {
             return_types.emplace_back(t);

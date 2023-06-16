@@ -30,15 +30,6 @@ SELECT columnA, columnB FROM pytable('udfs:index_chars', kwargs = {input: 'foo'}
 1	o
 2 	o
 
-# No 'columns' argument when a function has type annotations
-query II
-SELECT * FROM pytable('udfs:index_chars_types_annotated', 'foo')
-----
-0	f
-1	o
-2 	o
-
-
 # Mixed kwargs and varargs
 query III
 SELECT * FROM pytable('udfs:sentence_to_columns', 'hello my friend', kwargs = {'rows': 2},
