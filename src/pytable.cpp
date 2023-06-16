@@ -147,7 +147,6 @@ void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input
 	}
 
 	bind_data->pyfunc = new pyudf::TableFunction(module_name, function_name);
-	// PythonFunction func = PythonFunction(module_name, function_name);
 	bind_data->arguments = duckdbs_to_pys(arguments);
 	if (NULL == bind_data->arguments) {
 		throw IOException("Failed coerce function arguments");
