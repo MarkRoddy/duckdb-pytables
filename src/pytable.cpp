@@ -7,7 +7,7 @@
 #include <duckdb/parser/expression/function_expression.hpp>
 #include <pytable.hpp>
 #include "python_function.hpp"
-#include "table_function.hpp"
+#include "python_table_function.hpp"
 #include <pyconvert.hpp>
 #include <log.hpp>
 
@@ -28,7 +28,7 @@ struct PyScanBindData : public TableFunctionData {
 	// Return value of the function specified
 	PyObject *function_result_iterable;
 
-	pyudf::TableFunction *pyfunc;
+	pyudf::PythonTableFunction *pyfunc;
 };
 
 struct PyScanLocalState : public LocalTableFunctionState {
@@ -147,7 +147,7 @@ void PyBindFunctionAndArgs(ClientContext &context, TableFunctionBindInput &input
 		throw InvalidInputException("I don't know how logic works");
 	}
 
-	bind_data->pyfunc = new pyudf::TableFunction(module_name, function_name);
+	bind_data->pyfunc = new pyudf::PythonTableFunction(module_name, function_name);
 	bind_data->arguments = duckdbs_to_pys(arguments);
 	if (NULL == bind_data->arguments) {
 		throw IOException("Failed coerce function arguments");

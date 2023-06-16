@@ -7,10 +7,10 @@
 #include <duckdb.hpp>
 
 namespace pyudf {
-class TableFunction : public PythonFunction {
+class PythonTableFunction : public PythonFunction {
 public:
-	TableFunction(const std::string &function_specifier);
-	TableFunction(const std::string &module_name, const std::string &function_name);
+	PythonTableFunction(const std::string &function_specifier);
+	PythonTableFunction(const std::string &module_name, const std::string &function_name);
 	std::vector<std::string> column_names(PyObject *args, PyObject *kwargs);
 	std::vector<duckdb::LogicalType> column_types(PyObject *args, PyObject *kwargs);
 

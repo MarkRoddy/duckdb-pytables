@@ -1,6 +1,6 @@
 
 #include <python_function.hpp>
-#include <table_function.hpp>
+#include <python_table_function.hpp>
 #include <config.h>
 #include <pyconvert.hpp>
 #include <string>
@@ -8,7 +8,7 @@
 
 namespace pyudf {
 
-TableFunction::TableFunction(const std::string &function_specifier) : PythonFunction(function_specifier) {
+PythonTableFunction::PythonTableFunction(const std::string &function_specifier) : PythonFunction(function_specifier) {
 	auto wrapped = wrap_function(function);
 	if (wrapped) {
 		debug("Successfully wrapped the function");
@@ -18,7 +18,7 @@ TableFunction::TableFunction(const std::string &function_specifier) : PythonFunc
 	}
 }
 
-TableFunction::TableFunction(const std::string &module_name, const std::string &function_name)
+PythonTableFunction::PythonTableFunction(const std::string &module_name, const std::string &function_name)
     : PythonFunction(module_name, function_name) {
 	auto wrapped = wrap_function(function);
 	if (wrapped) {
@@ -29,7 +29,7 @@ TableFunction::TableFunction(const std::string &module_name, const std::string &
 	}
 }
 
-PyObject *TableFunction::wrap_function(PyObject *function) {
+PyObject *PythonTableFunction::wrap_function(PyObject *function) {
 	debug("About to import the decorator");
 	PyObject *decorator = import_decorator();
 	if (!decorator) {
@@ -96,7 +96,7 @@ PyObject *TableFunction::wrap_function(PyObject *function) {
 	return wrapped_function;
 }
 
-PyObject *TableFunction::import_decorator() {
+PyObject *PythonTableFunction::import_decorator() {
 	debug("Calling import module");
 	PyObject *module_obj = PyImport_ImportModule("ducktables");
 	debug("Completed calling import module");
@@ -118,7 +118,7 @@ PyObject *TableFunction::import_decorator() {
 	return function_obj;
 }
 
-std::vector<PyObject *> TableFunction::pycolumn_types(PyObject *args, PyObject *kwargs) {
+std::vector<PyObject *> PythonTableFunction::pycolumn_types(PyObject *args, PyObject *kwargs) {
 	std::vector<PyObject *> columnTypes;
 
 	// Get the 'column_types' method
@@ -153,14 +153,14 @@ std::vector<PyObject *> TableFunction::pycolumn_types(PyObject *args, PyObject *
 	return columnTypes;
 }
 
-std::vector<duckdb::LogicalType> TableFunction::column_types(PyObject *args, PyObject *kwargs) {
+std::vector<duckdb::LogicalType> PythonTableFunction::column_types(PyObject *args, PyObject *kwargs) {
 	auto python_types = pycolumn_types(args, kwargs);
 	// todo: check for a Python error?
 	auto ddb_types = PyTypesToLogicalTypes(python_types);
 	return ddb_types;
 }
 
-std::vector<std::string> TableFunction::column_names(PyObject *args, PyObject *kwargs) {
+std::vector<std::string> PythonTableFunction::column_names(PyObject *args, PyObject *kwargs) {
 	std::vector<std::string> columnNames;
 
 	// Get the 'column_names' method
