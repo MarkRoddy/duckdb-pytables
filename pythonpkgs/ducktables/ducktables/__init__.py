@@ -11,7 +11,6 @@ class DuckTableSchemaWrapper:
 
     def column_names(self, *args, **kwargs):
         if self.names:
-            print("Returning an explicit set of %s column names" % len(self.names), file=sys.stderr)
             return self.names
         else:
             return self.names_from_types(*args, **kwargs)
@@ -24,7 +23,6 @@ class DuckTableSchemaWrapper:
 
     def column_types(self, *args, **kwargs):
         if self.types:
-            print("Returning an explicit set of %s column types" % len(self.types), file=sys.stderr)
             return self.types
         else:
             return self.types_from_signature()
