@@ -71,7 +71,13 @@ python-release:
 	rm -f pythonpkgs/ducktables/dist/duck*
 	bash ./scripts/python-release.sh
 
+# Runs DuckDB SQL using functions provided by the Python package. Note that since most of these functions require
+# some kind of auth, you will likely have trouble running these locally without a lot of (presently) undocumented setup.
 python-test-integration:
+	@if [ -z "$(GITHUB_ACCESS_TOKEN)" ]; then echo "Missing GITHUB_ACCESS_TOKEN needed for testing"; exit 1; fi
+	@if [ -z "$(GOOGLE_APPLICATION_CREDENTIALS)" ]; then echo "Missing GOOGLE_APPLICATION_CREDENTIALS needed for testing"; exit 1; fi
+	@if [ -z "$(OPENAI_API_KEY)" ]; then echo "Missing OPENAI_API_KEY needed for testing"; exit 1; fi
+	@if [ -z "$(OPENAI_ORG_ID)" ]; then echo "Missing OPENAI_ORG_ID needed for testing"; exit 1; fi
 	bash ./scripts/python-test-integration.sh
 
 # Tests a build of the extension against a download of DuckDB

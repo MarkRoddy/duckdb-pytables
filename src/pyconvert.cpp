@@ -271,4 +271,41 @@ char *Unicode_AsUTF8(PyObject *unicodeObject) {
 	return result;
 }
 
+// Cache our lookup of the isinstance function, does this have GC implications?
+PyObject *isinstance;
+
+PyObject *lookupIsInstanceFunc() {
+	PyObject *builtinModule = PyImport_ImportModule("builtins");
+	if (!builtinModule) {
+		// todo: is something really wrong here?
+		return nullptr; // Error loading module
+	}
+
+	PyObject *isinstanceFunc = PyObject_GetAttrString(builtinModule, "isinstance");
+	Py_DECREF(builtinModule);
+	if (!isinstanceFunc) {
+		return nullptr; // Error getting isinstance function
+	}
+	return isinstanceFunc;
+}
+
+bool PyIsInstance(PyObject *instance, PyObject *classObj) {
+	if (!instance || !classObj) {
+		return false; // Either instance or classObj is a null pointer.
+	}
+
+	if (!isinstance) {
+		isinstance = lookupIsInstanceFunc();
+	}
+	PyObject *result = PyObject_CallFunctionObjArgs(isinstance, instance, classObj, NULL);
+	if (result == NULL) {
+		return false; // Error calling function
+	}
+
+	bool isInstance = PyObject_IsTrue(result);
+	Py_DECREF(result);
+
+	return isInstance;
+}
+
 } // namespace pyudf
