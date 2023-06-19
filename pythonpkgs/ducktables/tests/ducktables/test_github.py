@@ -7,7 +7,7 @@ class TestGithub(TestCase):
     def test_schema(self):
         # @ducktable(name = str, description = str, language = str)
         actual_names = github.repos_for.column_names()
-        expected_names = ('name', 'description', 'language')
+        expected_names = ('repo', 'description', 'language')
         self.assertEqual(expected_names, actual_names)
 
         actual_types = github.repos_for.column_types()
