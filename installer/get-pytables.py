@@ -4,6 +4,7 @@ import os, sys
 import time
 import shutil
 import argparse
+import platform
 import subprocess
 import ctypes.util
 import subprocess
@@ -15,13 +16,18 @@ def check_os():
     if sys.platform in ("linux", "linux2"):
         log.debug("we good")
         return True
-    elif platform == "darwin":
+    elif sys.platform == "darwin":
         # OS X
-        log.debug("Not yet supported")
-        print("Builds for OSX are not yet available. If you'd like to see OSX support, please share your voice here:")
-        print("https://github.com/MarkRoddy/duckdb-pytables/issues/37")
-        return False
-    elif platform == "win32":
+        arch = platform.machine()
+        if arch == 'arm64':
+            log.debug("Not yet supported")
+            print("Builds for OSX on M1 chips are not yet available. If you'd like to see OSX support, please share your voice here:")
+            print("https://github.com/MarkRoddy/duckdb-pytables/issues/37")
+            return False
+        else:
+            log.debug("we good: non-m1 on osx detected")
+            return True
+    elif sys.platform == "win32":
         log.debug("Not yet supported")
         print("Builds for Windows are not yet available. If you'd like to see Windows support, please share your voice here:")
         print("https://github.com/MarkRoddy/duckdb-pytables/issues/38")
