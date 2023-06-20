@@ -30,16 +30,25 @@ jobs:
           fetch-depth: 0
           submodules: 'true'
 
-      - name: Install Ninja
-        run: brew install ninja
-
-      - name: Install OpenSSL
+      - name: Install Dependencies
         run: |
+          brew install ninja
           brew install openssl@3.0
-        
+          brew install ccache
+
+      - name: Install Python
       - uses: actions/setup-python@v2
         with:
           python-version: '${{ matrix.python_version }}'
+
+      - name: Restore cached build artifacts
+        id: cache-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            build/
+            ~/.ccache/
+          key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
 
       - name: Checkout DuckDB to version
         if: ${{ matrix.duckdb_version != '<submodule_version>'}}
@@ -47,12 +56,22 @@ jobs:
           cd duckdb
           git checkout v${{ matrix.duckdb_version }}
 
-         # Build extension
+      # Build extension
       - name: Build extension
         shell: bash
         run: |
           make release
           make test
+          ccache -s
+
+      - name: Cache build artifacts
+        id: cache-save
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            build/
+            ~/.ccache/
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
       - name: Deploy
         env:

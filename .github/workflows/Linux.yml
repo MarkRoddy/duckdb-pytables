@@ -108,6 +108,7 @@ jobs:
         CXX: ${{ matrix.arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
       run: |
         make release
+        ccache -s
 
     - name: Cache build artifacts
       id: cache-save
