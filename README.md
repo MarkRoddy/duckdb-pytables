@@ -119,8 +119,7 @@ Note this queries the names of objects themselves, not their contents. This can 
 # Current Limitations
 Note these are not inherent limitations that can not be overcome, but presently have yet to be overcome. Feel free to help with that!
 
-* Binaries only available for Linux x64 architecture. Builds for OSX and Windows coming soon.
-* Scalar functions only support returning `VARCHAR` values at this time.
+* Binaries only available for Linux and OSX on x64 architectures. Builds for Windows and OSX on amd (ala M1 chips) coming soon.
 * Not all DuckDB and Python datatypes have been fully mapped. Please file an issue if you find one unsupported.
 * Builds only available for Python 3.8 and later.
 
