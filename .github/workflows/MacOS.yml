@@ -43,7 +43,7 @@ jobs:
 
       - name: Check CCache Before Restore
         run: |
-          ls -lA ~/.ccache
+          ls -lA ~/.ccache | true
           ccache -s
 
       - name: Restore cached build artifacts
