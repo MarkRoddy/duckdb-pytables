@@ -52,6 +52,7 @@ jobs:
 
       - name: Check CCache After Restore
         run: |
+          mkdir -p ~/.ccache
           ls -lA ~/.ccache
           ccache -s
 
