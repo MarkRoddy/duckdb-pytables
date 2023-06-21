@@ -41,6 +41,11 @@ jobs:
         with:
           python-version: '${{ matrix.python_version }}'
 
+      - name: Check CCache Before Restore
+        run: |
+          ls -lA ~/.ccache
+          ccache -s
+
       - name: Restore cached build artifacts
         id: cache-restore
         uses: actions/cache/restore@v3
@@ -48,7 +53,12 @@ jobs:
           path: |
             build/
             ~/.ccache/
-          key: duckdb-v${{ matrix.duckdb_version }}-${{ matrix.arch }}
+          key: duckdb-v${{ matrix.duckdb_version }}-python${{ matrix.python_version}}-${{ matrix.arch }}
+
+      - name: Check CCache After Restore
+        run: |
+          ls -lA ~/.ccache
+          ccache -s
 
       - name: Checkout DuckDB to version
         if: ${{ matrix.duckdb_version != '<submodule_version>'}}
