@@ -173,5 +173,6 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_KEY }}
         AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
         BUCKET_NAME: ${{ secrets.S3_BUCKET }}
+        ARCH: ${{matrix.arch}}
       run: |
         ./scripts/ci-release-artifacts.sh
