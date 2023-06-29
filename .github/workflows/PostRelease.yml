@@ -10,7 +10,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        duckdb_version: ['0.8.0', '0.8.1']
+        # Leave 0.8.1 of DuckDB out of the matrix until
+        # 0.1.3 of the extension is released (it adds support for 0.8.1).
+        # duckdb_version: ['0.8.0', '0.8.1']
+        duckdb_version: ['0.8.0']
         python_version: ['3.8', '3.9', '3.10', '3.11']
         arch: ['linux_amd64']
     env:
