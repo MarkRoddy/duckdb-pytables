@@ -18,6 +18,11 @@ jobs:
       DUCKDB_VERSION: ${{ matrix.duckdb_version }}
 
     steps:
+      - name: Install required ubuntu packages
+        run: |
+          apt-get update -y -qq
+          apt-get install -y -qq make curl zip unzip
+
       - name: Checkout Repository
         uses: actions/checkout@v2
 
