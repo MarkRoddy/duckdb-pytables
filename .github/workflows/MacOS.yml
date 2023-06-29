@@ -1,0 +1,90 @@
+name: MacOS
+on: [push]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  macos:
+    name: MacOS Release (Universal)
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Add commits/stags to build against other DuckDB versions
+        duckdb_version: ['0.8.0', '0.8.1'] # <submodule_version>"
+        python_version: ['3.8', '3.9', '3.10', '3.11']
+        arch: ['osx_amd64'] #, 'osx_arm64']
+
+    env:
+      OSX_BUILD_UNIVERSAL: 0
+      GEN: ninja
+      PYTHON_VERSION: ${{ matrix.python_version }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      - name: Install Dependencies
+        run: |
+          brew install ninja
+          brew install openssl@3.0
+          brew install ccache
+
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '${{ matrix.python_version }}'
+
+      - name: Restore cached build artifacts
+        id: cache-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            build/
+            ~/.ccache/
+          key: duckdb-v${{ matrix.duckdb_version }}-python${{ matrix.python_version}}-${{ matrix.arch }}
+
+      - name: Check CCache After Restore
+        run: |
+          mkdir -p ~/.ccache
+          ls -lA ~/.ccache
+          ccache -s
+
+      - name: Checkout DuckDB to version
+        if: ${{ matrix.duckdb_version != '<submodule_version>'}}
+        run: |
+          cd duckdb
+          git checkout v${{ matrix.duckdb_version }}
+
+      # Build extension
+      - name: Build extension
+        shell: bash
+        run: |
+          make release
+          make test
+          ccache -s
+
+      - name: Cache build artifacts
+        id: cache-save
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            build/
+            ~/.ccache/
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+
+      - name: Deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          BUCKET_NAME: ${{ secrets.S3_BUCKET }}
+        run: |
+          ./scripts/ci-release-artifacts.sh
+ 
