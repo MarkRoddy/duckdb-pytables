@@ -21,7 +21,7 @@ jobs:
       - name: Install required ubuntu packages
         run: |
           apt-get update -y -qq
-          apt-get install -y -qq make curl zip unzip
+          apt-get install -y -qq make curl zip unzip docker.io
 
       - name: Checkout Repository
         uses: actions/checkout@v2
