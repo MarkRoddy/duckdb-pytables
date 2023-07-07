@@ -11,6 +11,10 @@ if [ -z "$PYTHON_VERSION" ]; then
     PYTHON_VERSION=3.8;
 fi
 
+if [ -z "$BUILD_TARGET" ]; then
+    BUILD_TARGET=release
+fi
+
 echo "Entering python land..."
 cd pythonpkgs/
 
@@ -36,4 +40,4 @@ pip install -r requirements.txt
 cd ../../
 
 export PYTHONPATH=pythonpkgs/ducktables
-./build/release/test/unittest --test-dir . "[ducktables-integration]"
+./build/$BUILD_TARGET/test/unittest --test-dir . "[ducktables-integration]"
