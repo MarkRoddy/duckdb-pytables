@@ -130,7 +130,8 @@ jobs:
     - name: Python Integration Tests
       if: ${{ '<submodule_version>' != matrix.duckdb_version }}
       run: |
-        make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} python-test-integration
+        echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON_B64" | base64 --decode > gcloud-creds.json         
+        make GOOGLE_APPLICATION_CREDENTIALS=gcloud-creds.json GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} python-test-integration
 
     # Runs the extension against the official DuckDB binary (versus the one built w/this project)
     - name: Extension Integration Tests
