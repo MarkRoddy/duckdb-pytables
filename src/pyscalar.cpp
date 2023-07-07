@@ -7,6 +7,7 @@
 #include <iostream>
 #include "python_function.hpp"
 #include "pyconvert.hpp"
+#include <log.hpp>
 
 using namespace duckdb;
 namespace pyudf {
@@ -33,7 +34,6 @@ static void PyScalarFunction(DataChunk &args, ExpressionState &state, Vector &re
 		PythonException *error;
 		std::tie(pyresult, error) = func.call(pyargs);
 		if (!pyresult) {
-			Py_DECREF(pyresult);
 			Py_DECREF(pyargs);
 			std::string err = error->message;
 			error->~PythonException();

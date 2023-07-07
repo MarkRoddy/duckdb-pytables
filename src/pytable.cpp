@@ -237,7 +237,6 @@ unique_ptr<FunctionData> PyBind(ClientContext &context, TableFunctionBindInput &
 	PythonException *error;
 	std::tie(iter, error) = result->pyfunc->call(result->arguments, result->kwargs);
 	if (!iter) {
-		Py_DECREF(iter);
 		std::string err = error->message;
 		error->~PythonException();
 		throw std::runtime_error(err);
