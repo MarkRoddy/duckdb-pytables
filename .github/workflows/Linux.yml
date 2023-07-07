@@ -45,7 +45,10 @@ jobs:
 
     - name: Setup Python ${{ matrix.python_version }}
       run: |
-        apt-get install -y -qq python${{ matrix.python_version }}-dev
+        apt-get install -y -qq python${{ matrix.python_version }}-dev python${PYTHON_VERSION}-distutils python${PYTHON_VERSION}-venv
+        curl https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION};
+        python$PYTHON_VERSION -m pip install --upgrade pip && \
+        python$PYTHON_VERSION -m venv --help
   
     - uses: actions/checkout@v3
       with:
