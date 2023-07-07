@@ -33,16 +33,16 @@ static void PyScalarFunction(DataChunk &args, ExpressionState &state, Vector &re
 		PythonException *error;
 		std::tie(pyresult, error) = func.call(pyargs);
 		if (!pyresult) {
-			Py_XDECREF(pyresult);
-			Py_XDECREF(pyargs);
+			Py_DECREF(pyresult);
+			Py_DECREF(pyargs);
 			std::string err = error->message;
 			error->~PythonException();
 			throw std::runtime_error(err);
 		} else {
 			auto ddb_result = ConvertPyObjectToDuckDBValue(pyresult, duckdb::LogicalTypeId::VARCHAR);
 			result.SetValue(row, ddb_result);
-			Py_XDECREF(pyargs);
-			Py_XDECREF(pyresult);
+			Py_DECREF(pyargs);
+			Py_DECREF(pyresult);
 		}
 	}
 }

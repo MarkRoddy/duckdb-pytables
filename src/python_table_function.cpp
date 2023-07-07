@@ -53,8 +53,8 @@ PyObject *PythonTableFunction::wrap_function(PyObject *function) {
 		auto is_decorator = PyIsInstance(function, decorator_cls);
 		if (is_decorator) {
 			debug("Our function is already wrapped. Nothing to do here.");
-			Py_XDECREF(decorator);
-			Py_XDECREF(decorator_cls);
+			Py_DECREF(decorator);
+			Py_DECREF(decorator_cls);
 			return function;
 		} else {
 			debug("our function is not wrapped, applying the decorator");
@@ -124,7 +124,7 @@ PyObject *PythonTableFunction::import_from_ducktables(std::string attr_name) {
 		debug("Attribute not found returning null");
 		PyErr_Print();
 	}
-	Py_XDECREF(module_obj);
+	Py_DECREF(module_obj);
 	return attr;
 }
 PyObject *PythonTableFunction::import_decorator() {
@@ -152,7 +152,7 @@ std::vector<PyObject *> PythonTableFunction::call_to_list(std::string attr_name,
 
 	if (!PyCallable_Check(method)) {
 		debug("Our method has a '" + attr_name + "' attribute, but it is not callabe");
-		Py_XDECREF(method);
+		Py_DECREF(method);
 		return items;
 	}
 
@@ -160,7 +160,7 @@ std::vector<PyObject *> PythonTableFunction::call_to_list(std::string attr_name,
 	PyObject *result = PyObject_Call(method, args, kwargs);
 	if (!result) {
 		debug("The function's " + attr_name + " method returned null. Did an error occur?");
-		Py_XDECREF(method);
+		Py_DECREF(method);
 		return items;
 	}
 
@@ -168,8 +168,8 @@ std::vector<PyObject *> PythonTableFunction::call_to_list(std::string attr_name,
 	PyObject *listResult = PySequence_List(result);
 	if (!listResult) {
 		debug("Unable to convert " + attr_name + "() return to a list. Maybe an error?");
-		Py_XDECREF(result);
-		Py_XDECREF(method);
+		Py_DECREF(result);
+		Py_DECREF(method);
 		return items;
 	}
 
@@ -185,9 +185,9 @@ std::vector<PyObject *> PythonTableFunction::call_to_list(std::string attr_name,
 		items.push_back(listItem);
 	}
 
-	Py_XDECREF(result);
-	Py_XDECREF(listResult);
-	Py_XDECREF(method);
+	Py_DECREF(result);
+	Py_DECREF(listResult);
+	Py_DECREF(method);
 	return items;
 }
 

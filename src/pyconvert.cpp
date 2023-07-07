@@ -237,7 +237,7 @@ std::vector<duckdb::LogicalType> PyTypesToLogicalTypes(const std::vector<PyObjec
 			}
 
 			// Release the reference to the type name object
-			Py_XDECREF(typeNameObj);
+			Py_DECREF(typeNameObj);
 		}
 	}
 
