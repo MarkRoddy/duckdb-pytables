@@ -5,12 +5,16 @@ set -e;
 echo "Entering python land..."
 cd pythonpkgs/
 
+if [ -z "$PYTHON_VERSION" ]; then
+    PYTHON_VERSION=3.8;
+fi
+
 echo "Checking that we have a python..."
-which python3.8
+which python$PYTHON_VERSION
 
 # Create a virtual environment
 echo "Creating our virtual environment"
-python3.8 -m venv myenv
+python$PYTHON_VERSION -m venv myenv
 echo "Sourcing the env"
 source myenv/bin/activate
 
