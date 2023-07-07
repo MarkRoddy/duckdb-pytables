@@ -19,9 +19,9 @@ which python$PYTHON_VERSION
 
 # Create a virtual environment
 echo "Creating our virtual environment"
-python$PYTHON_VERSION -m venv myenv
+python$PYTHON_VERSION -m venv env-py$PYTHON_VERSION
 echo "Sourcing the env"
-source myenv/bin/activate
+source env-py$PYTHON_VERSION/bin/activate
 
 cd ducktables;
 
