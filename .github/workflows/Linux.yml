@@ -134,7 +134,7 @@ jobs:
       if: ${{ '<submodule_version>' != matrix.duckdb_version }}
       run: |
         echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON_B64 }}" | base64 --decode > gcloud-creds.json         
-        make AWS_DEFAULT_REGION=us-west-2 OPENAI_ORG_ID="${{ secrets.OPENAI_ORG_ID }}" OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" GOOGLE_APPLICATION_CREDENTIALS=gcloud-creds.json GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} python-test-integration
+        make AWS_ACCESS_KEY_ID=${{ secrets.S3_DEPLOY_ID }} AWS_SECRET_ACCESS_KEY=${{ secrets.S3_DEPLOY_KEY }} AWS_DEFAULT_REGION=${{ secrets.S3_REGION }} OPENAI_ORG_ID="${{ secrets.OPENAI_ORG_ID }}" OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" GOOGLE_APPLICATION_CREDENTIALS=gcloud-creds.json GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} python-test-integration
 
     # Runs the extension against the official DuckDB binary (versus the one built w/this project)
     - name: Extension Integration Tests
