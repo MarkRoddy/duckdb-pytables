@@ -127,11 +127,24 @@ build-container-devel:
 # Assuming you've built the image above, runs a Docker container with your local source
 # checkout mounted and compiles the project.
 container-compile:
-	docker run --rm --interactive \
+	$(MAKE) CONTAINER_CMD="bash scripts/docker-build-in-container.sh $(PYTHON_VERSION)" container-cmd
+
+container-python-test-integration:
+	$(MAKE) CONTAINER_CMD="make python-test-integration" container-cmd
+container-cmd:
+	@if [ -z "$(CONTAINER_CMD)" ]; then echo "Specify a CONTAINER_CMD env to use this target"; exit 1; fi
+	@docker run --rm --interactive \
 	  --volume "$(HOME)/.ccache/:/home/$(USER)/.ccache" \
 	  --volume "$(shell pwd)/:$(shell pwd)" \
+	  --volume "$(shell dirname $(GOOGLE_APPLICATION_CREDENTIALS))/:$(shell dirname $(GOOGLE_APPLICATION_CREDENTIALS))/" \
+	  --volume "$(HOME)/.aws/:/home/$(USER)/.aws" \
+	  -e GITHUB_ACCESS_TOKEN="$(GITHUB_ACCESS_TOKEN)" \
+	  -e GOOGLE_APPLICATION_CREDENTIALS="$(GOOGLE_APPLICATION_CREDENTIALS)" \
+	  -e OPENAI_API_KEY="$(OPENAI_API_KEY)" \
+	  -e OPENAI_ORG_ID="$(OPENAI_ORG_ID)" \
+	  -e PYTHON_VERSION="$(PYTHON_VERSION)" \
 	  build-duckdb-python-py$(PYTHON_VERSION) \
-	  bash -c "cd $(shell pwd) && bash scripts/docker-build-in-container.sh $(PYTHON_VERSION)"
+	  bash -c "cd $(shell pwd) && $(CONTAINER_CMD)"
 
 # Executes the installer script and check that it correctly detects some common misconfigurations
 test-installer:

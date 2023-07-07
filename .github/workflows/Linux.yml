@@ -126,10 +126,11 @@ jobs:
       run: |
         make python-ci
 
-    - name: Run Integration Tests
+    - name: Extension + Python Integration Tests
       if: ${{ '<submodule_version>' != matrix.duckdb_version }}
       run: |
         make GITHUB_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} DUCKDB_VERSION=${{ env.DUCKDB_VERSION }} extension-integration-tests
+        make python-test-integration
 
     # Can't test the installer against a version of DuckDB that we've never produced binaries for before.
     # todo: conditionally run this if the installer has changed

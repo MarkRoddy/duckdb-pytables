@@ -6,16 +6,20 @@ if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
    echo "Please specify a path to your Google credentials file via GOOGLE_APPLICATION_CREDENTIALS";
    exit 1;
 fi
-   
+
+if [ -z "$PYTHON_VERSION" ]; then
+    PYTHON_VERSION=3.8;
+fi
+
 echo "Entering python land..."
 cd pythonpkgs/
 
 echo "Checking that we have a python..."
-which python3.8
+which python$PYTHON_VERSION
 
 # Create a virtual environment
 echo "Creating our virtual environment"
-python3.8 -m venv myenv
+python$PYTHON_VERSION -m venv myenv
 echo "Sourcing the env"
 source myenv/bin/activate
 
