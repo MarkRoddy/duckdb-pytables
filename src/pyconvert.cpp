@@ -5,6 +5,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <log.hpp>
+#include <cpy/module.hpp>
 
 namespace pyudf {
 
@@ -160,32 +161,13 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 }
 
 PyObject *pyObjectToIterable(PyObject *py_object) {
-	PyObject *collections_module = PyImport_ImportModule("collections.abc");
-	if (!collections_module) {
-		return nullptr;
-	}
-
-	PyObject *iterable_class = PyObject_GetAttrString(collections_module, "Iterable");
-	if (!iterable_class) {
-		Py_DECREF(collections_module);
-		return nullptr;
-	}
-
-	int is_iterable = PyObject_IsInstance(py_object, iterable_class);
-	Py_DECREF(iterable_class);
-	Py_DECREF(collections_module);
-
-	if (!is_iterable) {
-		PyErr_SetString(PyExc_TypeError, "Input must be an iterable or an object that can be iterated upon");
-		return nullptr;
-	}
-
-	PyObject *py_iter = PyObject_GetIter(py_object);
-	if (!py_iter) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to get iterator from the input object");
-	}
-
-	return py_iter;
+        cpy::Object obj(py_object); 
+        cpy::Object iterable_class = cpy::Module("collections.abc").getattr("Iterable");
+        if(!obj.isinstance(iterable_class)) {
+          throw std::runtime_error("Object is not an iterable, presumably...");
+        }
+        auto iterobj = obj.iter();
+        return iterobj.getpy();
 }
 
 PyObject *StructToDict(duckdb::Value value) {
@@ -271,41 +253,11 @@ char *Unicode_AsUTF8(PyObject *unicodeObject) {
 	return result;
 }
 
-// Cache our lookup of the isinstance function, does this have GC implications?
-PyObject *isinstance;
-
-PyObject *lookupIsInstanceFunc() {
-	PyObject *builtinModule = PyImport_ImportModule("builtins");
-	if (!builtinModule) {
-		// todo: is something really wrong here?
-		return nullptr; // Error loading module
-	}
-
-	PyObject *isinstanceFunc = PyObject_GetAttrString(builtinModule, "isinstance");
-	Py_DECREF(builtinModule);
-	if (!isinstanceFunc) {
-		return nullptr; // Error getting isinstance function
-	}
-	return isinstanceFunc;
-}
-
 bool PyIsInstance(PyObject *instance, PyObject *classObj) {
 	if (!instance || !classObj) {
 		return false; // Either instance or classObj is a null pointer.
 	}
-
-	if (!isinstance) {
-		isinstance = lookupIsInstanceFunc();
-	}
-	PyObject *result = PyObject_CallFunctionObjArgs(isinstance, instance, classObj, NULL);
-	if (result == NULL) {
-		return false; // Error calling function
-	}
-
-	bool isInstance = PyObject_IsTrue(result);
-	Py_DECREF(result);
-
-	return isInstance;
+        cpy::Object inst(instance);
+        return inst.isinstance(classObj);
 }
-
 } // namespace pyudf
