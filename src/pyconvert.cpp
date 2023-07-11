@@ -161,13 +161,13 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 }
 
 PyObject *pyObjectToIterable(PyObject *py_object) {
-        cpy::Object obj(py_object); 
-        cpy::Object iterable_class = cpy::Module("collections.abc").getattr("Iterable");
-        if(!obj.isinstance(iterable_class)) {
-          throw std::runtime_error("Object is not an iterable, presumably...");
-        }
-        auto iterobj = obj.iter();
-        return iterobj.getpy();
+	cpy::Object obj(py_object);
+	cpy::Object iterable_class = cpy::Module("collections.abc").getattr("Iterable");
+	if (!obj.isinstance(iterable_class)) {
+		throw std::runtime_error("Object is not an iterable, presumably...");
+	}
+	auto iterobj = obj.iter();
+	return iterobj.getpy();
 }
 
 PyObject *StructToDict(duckdb::Value value) {
@@ -257,7 +257,7 @@ bool PyIsInstance(PyObject *instance, PyObject *classObj) {
 	if (!instance || !classObj) {
 		return false; // Either instance or classObj is a null pointer.
 	}
-        cpy::Object inst(instance);
-        return inst.isinstance(classObj);
+	cpy::Object inst(instance);
+	return inst.isinstance(classObj);
 }
 } // namespace pyudf

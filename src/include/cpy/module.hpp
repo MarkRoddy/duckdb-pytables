@@ -7,15 +7,15 @@
 #include <cpy/object.hpp>
 
 namespace cpy {
-  class Module : public cpy::Object {
+class Module : public cpy::Object {
 
-  public:
-    Module(const std::string &module_name);
+public:
+	Module(const std::string &module_name);
 
-  private:
-    std::string module_name_;
-    static PyObject* doImport(const std::string &module_name);
-  };
+private:
+	std::string module_name_;
+	static PyObject *doImport(const std::string &module_name);
+};
 
 } // namespace cpy
-# endif // CPY_MODULE_HPP
+#endif // CPY_MODULE_HPP
