@@ -8,16 +8,6 @@ namespace cpy {
     module_name_ = module_name;
   }
 
-  cpy::Object Module::getattr(const std::string &attribute_name) {
-    PyObject *attr = PyObject_GetAttrString(obj, attribute_name.c_str());
-    if(!attr) {
-      // todo: check if no such attribute, or some other error.
-      throw std::runtime_error("Failed to access attribute: " + attribute_name);
-    } else {
-      return cpy::Object(attr);
-    }
-  }
-
   PyObject* Module::doImport(const std::string &module_name) {
     auto obj = PyImport_ImportModule(module_name.c_str());
     if (!obj) {

@@ -1,4 +1,7 @@
 
+#ifndef CPY_MODULE_HPP
+#define CPY_MODULE_HPP
+
 #include <string>
 #include <Python.h>
 #include <cpy/object.hpp>
@@ -8,7 +11,6 @@ namespace cpy {
 
   public:
     Module(const std::string &module_name);
-    cpy::Object getattr(const std::string &attribute_name);
 
   private:
     std::string module_name_;
@@ -16,3 +18,4 @@ namespace cpy {
   };
 
 } // namespace cpy
+# endif // CPY_MODULE_HPP
