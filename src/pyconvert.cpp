@@ -162,7 +162,7 @@ void ConvertPyObjectsToDuckDBValues(PyObject *py_iterator, std::vector<duckdb::L
 
 PyObject *pyObjectToIterable(PyObject *py_object) {
 	cpy::Object obj(py_object);
-	cpy::Object iterable_class = cpy::Module("collections.abc").getattr("Iterable");
+	cpy::Object iterable_class = cpy::Module("collections.abc").attr("Iterable");
 	if (!obj.isinstance(iterable_class)) {
 		throw std::runtime_error("Object is not an iterable, presumably...");
 	}
